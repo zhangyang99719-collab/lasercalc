@@ -1,5 +1,7 @@
 # lasercalc
 
+[![PyPI version](https://img.shields.io/pypi/v/lima-lasercalc.svg)](https://pypi.org/project/lima-lasercalc/) [![Python](https://img.shields.io/pypi/pyversions/lima-lasercalc.svg)](https://pypi.org/project/lima-lasercalc/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 激光加工常用参数计算库 —— 高斯光束、能量密度、脉冲参数。
 
 纯 Python 标准库实现，无第三方依赖。面向激光焊接、切割、打孔、熔覆、表面处理等工艺场景，以及激光光学光路设计。
