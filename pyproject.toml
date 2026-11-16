@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lima-lasercalc"
+version = "0.1.0"
+description = "激光加工常用参数计算库（高斯光束 / 能量密度 / 脉冲参数）"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "LIMA" }]
+keywords = ["laser", "gaussian beam", "energy density", "laser processing"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[tool.setuptools]
+packages = ["lasercalc"]
+
+[project.scripts]
+lasercalc = "lasercalc.cli:main"
