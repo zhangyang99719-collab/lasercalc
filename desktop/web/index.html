@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIMA激光工具箱 · 预览</title>
+<style>
+  :root{
+    --bg:#0F172A; --text:#E2E8F0; --card:#1A2332; --card2:#18212F;
+    --cyan:#06B6D4; --cyan2:#22D3EE; --cyan3:#67E8F9; --gold:#F59E0B;
+    --muted:#94A3B8; --muted2:#64748B; --danger:#EF4444; --emerald:#34D399;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:#070b14;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;}
+  body{display:flex;align-items:center;justify-content:center;padding:24px 12px;gap:24px;flex-wrap:wrap;}
+  .stage{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
+
+  /* 手机外壳 */
+  .phone{width:390px;height:820px;background:#0b1018;border-radius:46px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 2px #1c2533, inset 0 0 0 6px #05080e;position:relative;}
+  .screen{width:100%;height:100%;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:26px;background:#05080e;border-bottom-left-radius:16px;border-bottom-right-radius:16px;z-index:50;}
+  .statusbar{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;color:#E2E8F0;font-size:13px;font-weight:600;flex-shrink:0;z-index:40;position:relative;}
+  .statusbar .dots{display:flex;gap:5px;align-items:center;}
+  .statusbar .bat{width:22px;height:11px;border:1px solid #94A3B8;border-radius:3px;position:relative;}
+  .statusbar .bat::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:#94A3B8;border-radius:1px;}
+  .statusbar .bat::before{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:#34D399;border-radius:1px;}
+
+  /* 自定义导航栏 */
+  .cnav{text-align:center;padding:2px 0 10px;flex-shrink:0;position:relative;z-index:30;}
+  .cnav .nav-title{display:inline-flex;align-items:baseline;}
+  .cnav .nav-lima{color:var(--cyan);font-size:19px;font-weight:800;}
+  .cnav .nav-dash{color:#F8FAFC;font-size:15px;font-weight:700;margin:0 2px;}
+  .cnav .nav-sub{color:var(--muted);font-size:14px;margin-left:8px;}
+
+  /* 内容滚动区 */
+  .scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 16px 18px;position:relative;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .logo-bg{position:absolute;top:60px;left:50%;transform:translateX(-50%);width:260px;height:260px;opacity:.04;pointer-events:none;z-index:0;font-size:120px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;letter-spacing:-6px;}
+  .page{position:relative;z-index:1;display:none;}
+  .page.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* 卡片 */
+  .card{margin-top:10px;padding:14px;border-radius:14px;background:var(--card);position:relative;z-index:1;}
+  .card.params{border:1px solid rgba(245,158,11,.30);background:linear-gradient(135deg,rgba(245,158,11,.07),rgba(6,182,212,.05));}
+  .t-title{position:relative;padding-left:12px;color:#F8FAFC;font-size:17px;font-weight:800;margin-bottom:4px;}
+  .t-title::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:5px;border-radius:3px;background:linear-gradient(180deg,#06B6D4,#F59E0B);}
+  .t-desc{color:var(--muted2);font-size:12px;line-height:1.5;margin-bottom:8px;}
+  .section-no{display:inline-block;min-width:18px;height:18px;line-height:18px;text-align:center;font-size:12px;font-weight:800;color:#06121C;background:linear-gradient(135deg,#06B6D4,#F59E0B);border-radius:6px;margin-right:6px;padding:0 4px;vertical-align:middle;}
+
+  /* 参数行 */
+  .param-row{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid rgba(148,163,184,.08);}
+  .param-row:last-child{border-bottom:none;}
+  .param-info{width:116px;flex-shrink:0;}
+  .param-name{font-size:14px;font-weight:700;color:#F8FAFC;white-space:nowrap;}
+  .param-desc{font-size:11px;color:var(--muted2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .param-control{flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;}
+  .param-control input{width:54px;flex-shrink:0;height:30px;padding:0 6px;border-radius:8px;background:#0E1420;border:1px solid #1F2A3A;color:var(--cyan3);font-size:14px;font-weight:700;text-align:center;outline:none;}
+  .param-unit{width:34px;flex-shrink:0;text-align:right;font-size:13px;color:var(--muted);font-weight:500;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:120px;height:4px;border-radius:3px;background:#1F2A3A;outline:none;flex:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--cyan);cursor:pointer;box-shadow:0 0 6px rgba(6,182,212,.6);}
+  input[type=range].gold::-webkit-slider-thumb{background:var(--gold);box-shadow:0 0 6px rgba(245,158,11,.6);}
+  input[type=range].orange::-webkit-slider-thumb{background:#FF6A1A;box-shadow:0 0 6px rgba(255,106,26,.6);}
+
+  /* 自定义滑块：小球默认居中，数值保持默认，拖动正常改值 */
+  .slider{position:relative;width:120px;height:18px;flex:none;display:flex;align-items:center;cursor:pointer;touch-action:none;}
+  .slider-track{position:relative;width:100%;height:4px;border-radius:3px;background:#1F2A3A;}
+  .slider-fill{position:absolute;left:0;top:0;height:100%;border-radius:3px;background:var(--cyan);width:50%;}
+  .slider-thumb{position:absolute;top:50%;left:50%;width:15px;height:15px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px rgba(6,182,212,.6);transform:translate(-50%,-50%);}
+  .slider.gold .slider-fill{background:var(--gold);}
+  .slider.gold .slider-thumb{background:var(--gold);box-shadow:0 0 6px rgba(245,158,11,.6);}
+  .slider.orange .slider-fill{background:#FF6A1A;}
+  .slider.orange .slider-thumb{background:#FF6A1A;box-shadow:0 0 6px rgba(255,106,26,.6);}
+
+  /* 结果网格 */
+  .r-grid{display:flex;flex-wrap:wrap;margin:10px -3px 0;}
+  .r-item{width:calc(50% - 6px);margin:3px;padding:10px;border-radius:12px;border:1px solid rgba(6,182,212,.30);background:rgba(6,182,212,.04);}
+  .r-item.full{width:calc(100% - 6px);}
+  .r-item.r-hero{width:calc(100% - 6px);background:rgba(6,182,212,.08);}
+  .r-label{color:var(--muted);font-size:11px;}
+  .r-label.lead{color:var(--gold);}
+  .r-value{margin-top:3px;color:var(--cyan3);font-size:18px;font-weight:800;}
+  .r-unit{color:var(--muted2);font-size:11px;margin-left:2px;font-weight:400;}
+  .lead-tag{display:inline-block;margin-left:5px;padding:1px 6px;font-size:10px;font-weight:700;color:#0B1320;background:linear-gradient(135deg,#06B6D4,#F59E0B);border-radius:5px;vertical-align:middle;}
+  .mode-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;}
+  .mode-keyhole{background:rgba(239,68,68,.15);color:#FCA5A5;border:1px solid #EF4444;}
+  .mode-trans{background:rgba(245,158,11,.15);color:#FCD34D;border:1px solid #F59E0B;}
+  .mode-conduction{background:rgba(6,182,212,.15);color:#67E8F9;border:1px solid #06B6D4;}
+
+  /* 通用分段选择器 */
+  .seg{display:flex;gap:4px;background:#0E1420;border-radius:10px;padding:4px;margin-bottom:6px;flex-wrap:wrap;}
+  .seg button,.seg .seg-btn{flex:1;min-width:54px;height:32px;border:none;border-radius:8px;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;padding:0 6px;font-family:inherit;}
+  .seg button.active,.seg .seg-btn.active{background:var(--cyan);color:#04222A;font-weight:700;}
+
+  /* 原理图 / 云图 */
+  .diagram{position:relative;margin:6px 0 8px;border-radius:14px;overflow:hidden;border:1px solid rgba(6,182,212,.30);box-shadow:inset 0 0 24px rgba(6,182,212,.10);background:#05090f;}
+  .diagram-badge{position:absolute;top:8px;left:10px;z-index:2;font-size:11px;letter-spacing:1px;color:#7dd3fc;background:rgba(6,182,212,.14);border:1px solid rgba(6,182,212,.32);padding:2px 9px;border-radius:7px;}
+  canvas{display:block;width:100%;}
+  #focusCanvas{height:170px;} #defCanvas{height:220px;} #pcCanvas{height:130px;} #osCanvas{height:130px;} #dcCloud{height:200px;} #densityCanvas{height:280px;}
+
+  /* 工具条 */
+  .ed-tool-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 1px;}
+  .ed-tool{font-size:12px;color:var(--muted);}
+  .ed-play{border:1px solid rgba(6,182,212,.5);border-radius:999px;padding:2px 12px;color:var(--cyan);font-size:12px;cursor:pointer;}
+  .ed-tool-pill{padding:5px 12px;border-radius:999px;background:#0B1320;color:var(--muted);font-size:11px;border:1px solid rgba(148,163,184,.15);cursor:pointer;}
+  .ed-tool-pill.on{background:rgba(6,182,212,.16);color:var(--cyan);border-color:var(--cyan);}
+
+  .colorbar{margin-top:10px;}
+  .cb-head{display:flex;justify-content:center;gap:5px;margin-bottom:6px;}
+  .cb-title{color:var(--muted);font-size:12px;font-weight:600;}
+  .cb-unit{color:var(--muted2);font-size:11px;}
+  .cb-bar{height:12px;border-radius:6px;background:linear-gradient(90deg,rgb(10,40,130) 0%,rgb(20,100,230) 22%,rgb(6,160,210) 40%,rgb(6,182,212) 55%,rgb(34,211,238) 70%,rgb(245,158,11) 80%,rgb(250,90,20) 92%,rgb(255,50,50) 100%);}
+  .cb-scale{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;padding:0 4px;margin-top:3px;}
+  .cb-scale .mid{color:var(--cyan);} .cb-scale .max{color:var(--gold);}
+
+  /* 大厅/子页返回 */
+  .nav-back{position:absolute;left:16px;top:2px;color:var(--cyan);font-size:24px;font-weight:700;cursor:pointer;z-index:35;}
+
+  /* 日报 */
+  .section-title{color:#F8FAFC;font-size:21px;font-weight:800;margin-bottom:3px;}
+  .subtitle{color:var(--muted2);font-size:13px;margin-bottom:10px;}
+  .hint{background:rgba(245,158,11,.12);color:var(--gold);font-size:12px;padding:8px 12px;border-radius:9px;margin-bottom:12px;}
+  .news-card{background:var(--card);border:1px solid rgba(6,182,212,.18);border-radius:14px;padding:14px;margin-bottom:12px;cursor:pointer;}
+  .card-date{color:var(--cyan);font-size:14px;font-weight:700;margin-bottom:6px;}
+  .card-digest{color:#CBD5E1;font-size:14px;line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+  .card-count{color:var(--muted2);font-size:12px;}
+  .card-arrow{color:var(--cyan);font-size:16px;font-weight:700;}
+  .detail-bar{display:flex;align-items:center;margin-bottom:8px;cursor:pointer;}
+  .back-arrow{color:var(--cyan);font-size:20px;margin-right:6px;}
+  .back-text{color:var(--muted);font-size:14px;}
+  .detail-date{color:#F8FAFC;font-size:22px;font-weight:800;margin-bottom:12px;}
+  .lead{background:rgba(6,182,212,.06);border-left:5px solid var(--cyan);border-radius:8px;padding:10px 12px;margin-bottom:14px;color:#CBD5E1;font-size:14px;line-height:1.7;}
+  .article{color:#CBD5E1;font-size:14px;line-height:1.9;}
+  .article h3{color:#F8FAFC;font-size:16px;margin:16px 0 6px;}
+  .article p{margin:0 0 10px;}
+  .article .tag{color:var(--cyan);font-weight:700;}
+
+  /* 设置 */
+  .menu-card{display:flex;align-items:center;padding:14px;border-radius:14px;background:var(--card);margin-top:6px;cursor:pointer;}
+  .menu-icon{width:34px;height:34px;font-size:18px;display:flex;align-items:center;justify-content:center;margin-right:12px;}
+  .menu-content{flex:1;}
+  .menu-title{color:#F8FAFC;font-size:15px;font-weight:700;}
+  .menu-desc{margin-top:2px;color:var(--muted);font-size:12px;}
+  .menu-arrow{color:#475569;font-size:16px;}
+  .qr-card{margin-top:10px;padding:14px;border-radius:14px;background:var(--card);text-align:center;}
+  .qr-box{width:150px;height:150px;margin:0 auto 10px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;}
+  .info-card{padding:12px;border-radius:14px;background:var(--card);}
+  .info-row{display:flex;justify-content:space-between;padding:6px 0;}
+  .info-label{color:var(--muted);font-size:13px;}
+  .info-value{color:#F8FAFC;font-size:13px;}
+
+  /* 底部 Tab */
+  .tabbar{height:64px;background:#1A2332;border-top:1px solid #0a0f18;display:flex;flex-shrink:0;padding-bottom:6px;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);}
+  .tab.active{color:var(--cyan);}
+  .tab svg{width:24px;height:24px;}
+  .tab .tab-txt{font-size:10px;font-weight:600;}
+  .entry-bar{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:12px 16px;border-radius:12px;background:#16202E;border:1px solid #1F2A3A;cursor:pointer;}
+  .entry-bar .et{color:#E2E8F0;font-size:15px;font-weight:600;}
+  .entry-bar .ea{color:var(--cyan);font-size:22px;line-height:1;}
+
+  /* 侧边说明 */
+  .side{width:300px;color:#94A3B8;font-size:13px;line-height:1.7;}
+  .side h1{color:#F8FAFC;font-size:22px;margin:0 0 4px;}
+  .side .sub{color:var(--cyan);font-size:13px;margin-bottom:14px;}
+  .side ul{padding-left:18px;margin:8px 0;}
+  .side li{margin:5px 0;}
+  .side code{background:#16202E;color:var(--cyan3);padding:1px 5px;border-radius:4px;font-size:12px;}
+  .side .note{background:rgba(6,182,212,.06);border-left:3px solid var(--cyan);padding:10px 12px;border-radius:8px;margin-top:14px;}
+
+  /* ================= 桌面宽短布局（纯布局改写；内容/算法/交互/文字一字未改） ================= */
+  body{padding:14px 16px;gap:0;align-items:flex-start;}
+  .stage{gap:0;}
+  .side{display:none;}
+
+  /* 容器：竖屏手机 -> 宽短桌面窗口；高度由内容撑开，一屏装下 */
+  .phone{width:min(1300px,97vw);height:auto;min-height:0;border-radius:16px;padding:8px;
+         box-shadow:0 22px 64px rgba(0,0,0,.55),0 0 0 1px #1c2533;}
+  .notch{display:none;}
+  .screen{border-radius:10px;height:auto;}
+  .statusbar{height:28px;padding:0 18px;font-size:12px;}
+  .cnav{padding:0 0 6px;}
+  .scroll{padding:6px 16px 12px;overflow:visible;flex:none;}
+
+  /* 页面 -> 多列网格；列数用 minmax 自适应，宽则多列 */
+  .page.active{display:grid !important;gap:12px;align-content:start;}
+
+  /* 光路设计：参数 | 聚焦 | 离焦 三列并排 */
+  #p-optical.active{
+    grid-template-columns:1fr 1.1fr 1.1fr;
+    grid-template-areas:'input focus defocus' 'entry entry entry';
+  }
+  #p-optical > :nth-child(1){grid-area:input;}
+  #p-optical > :nth-child(2){grid-area:focus;}
+  #p-optical > :nth-child(3){grid-area:defocus;}
+  #p-optical > :nth-child(4){grid-area:entry;}
+
+  /* 激光参数：左(参数+路径+轨迹堆叠) | 中(云图) | 右(结果) */
+  #p-params.active{
+    grid-template-columns:1fr 1.2fr 0.95fr;
+    grid-template-areas:'input cloud result' 'path cloud result' 'traj cloud result';
+  }
+  #p-params > :nth-child(1){grid-area:input;}
+  #p-params > :nth-child(2){grid-area:path;}
+  #p-params > :nth-child(3){grid-area:traj;}
+  #p-params > :nth-child(4){grid-area:cloud;}
+  #p-params > :nth-child(5){grid-area:result;}
+
+  /* 脉冲特性：两列并排 */
+  #p-quality.active{grid-template-columns:1fr 1fr;}
+
+  /* 能量密度子页：左(参数+扫描) | 中(云图) | 右(结果) */
+  #p-energy.active{
+    grid-template-columns:1fr 1.2fr 0.95fr;
+    grid-template-areas:'title title title' 'input cloud result' 'set cloud result';
+  }
+  #p-energy > :nth-child(1){grid-area:title;}
+  #p-energy > :nth-child(2){grid-area:title;}
+  #p-energy > :nth-child(3){grid-area:input;}
+  #p-energy > :nth-child(4){grid-area:set;}
+  #p-energy > :nth-child(5){grid-area:cloud;}
+  #p-energy > :nth-child(6){grid-area:result;}
+
+  /* 日报/设置单列；日报卡片两列 */
+  #p-daily.active,#p-about.active{display:block !important;}
+  #daily-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+
+  /* 参数区：列已变窄，保持单列但紧凑 */
+  .param-row{padding:7px 0;}
+  .param-info{width:104px;}
+  .param-desc{font-size:10px;}
+  input[type=range]{width:88px;}
+  .slider{width:88px;}
+  .param-control input{width:46px;}
+  .param-unit{width:30px;font-size:12px;}
+
+  /* 结果项：窄列里两列即可 */
+  .r-item{width:calc(50% - 6px);}
+  .r-item.full,.r-item.r-hero{width:calc(100% - 6px);}
+
+  /* canvas：压缩高度保持宽短比例 */
+  #focusCanvas{height:150px;}
+  #defCanvas{height:150px;}
+  #dcCloud{height:250px;}
+  #densityCanvas{height:270px;}
+  .card{margin-top:0;}
+  .card + .card{margin-top:0;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone">
+    <div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar">
+        <span id="clock">9:41</span>
+        <span class="dots">●●● &nbsp; Wi-Fi &nbsp; <span class="bat"></span></span>
+      </div>
+      <div class="cnav" id="cnav">
+        <div class="nav-title">
+          <span class="nav-lima">LIMA</span><span class="nav-dash">-Tools-</span><span class="nav-sub" id="navSub">激光光斑计算</span>
+        </div>
+      </div>
+      <div class="scroll" id="scroll">
+        <div class="logo-bg">LIMA</div>
+
+        <!-- 光路设计 -->
+        <div class="page active" id="p-optical">
+          <div class="card params">
+            <div class="t-title"><span class="section-no">①</span>输入参数</div>
+            <div class="t-desc">完整链路参数，同步驱动聚焦与离焦两个模块。</div>
+            <div id="opt-inputs"></div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">②</span>聚焦光斑</div>
+            <div class="t-desc">取 max(衍射极限, 芯径成像)，大者决定实际光斑。</div>
+            <div class="diagram"><div class="diagram-badge">光路示意</div><canvas id="focusCanvas"></canvas></div>
+            <div class="r-grid">
+              <div class="r-item r-hero"><div class="r-label">聚焦光斑直径</div><div class="r-value"><span id="sp_fd">50.00</span><span class="r-unit"> µm</span></div></div>
+              <div class="r-item"><div class="r-label" id="sp_ddiff_l">衍射极限</div><div class="r-value"><span id="sp_ddiff">3.69</span><span class="r-unit"> µm</span></div></div>
+              <div class="r-item"><div class="r-label" id="sp_dimage_l">芯径成像</div><div class="r-value"><span id="sp_dimage">50.00</span><span class="r-unit"> µm</span></div></div>
+              <div class="r-item"><div class="r-label">F 数</div><div class="r-value" id="sp_fnum">2.27</div></div>
+              <div class="r-item"><div class="r-label">聚焦镜 NA</div><div class="r-value" id="sp_na_f">0.220</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">③</span>离焦光斑</div>
+            <div class="t-desc">w(z)=w₀√(1+(z/z_R)²)，DOF=2z_R 为允许的工作离焦窗口。</div>
+            <div class="diagram"><div class="diagram-badge">光路示意</div><canvas id="defCanvas"></canvas></div>
+            <div class="r-grid">
+              <div class="r-item"><div class="r-label">离焦处光斑直径 w(z)</div><div class="r-value"><span id="sp_wz">735.04</span><span class="r-unit"> μm</span></div></div>
+              <div class="r-item"><div class="r-label">瑞利长度 z_R</div><div class="r-value"><span id="sp_zr">0.136</span><span class="r-unit"> mm</span></div></div>
+              <div class="r-item"><div class="r-label">焦深 DOF</div><div class="r-value"><span id="sp_dof">0.273</span><span class="r-unit"> mm</span></div></div>
+              <div class="r-item"><div class="r-label">相对束腰</div><div class="r-value" id="sp_ratio">×14.7</div></div>
+            </div>
+          </div>
+          <div class="entry-bar" onclick="showPage('energy')">
+            <span class="et">进入能量密度 3D 仿真</span><span class="ea">›</span>
+          </div>
+        </div>
+
+        <!-- 激光参数 -->
+        <div class="page" id="p-params">
+          <div class="card params">
+            <div class="t-title"><span class="section-no">①</span>工艺参数</div>
+            <div class="t-desc">功率·速度·光斑·吸收率，驱动下方能量密度仿真。</div>
+            <div id="par-inputs"></div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">②</span>扫描路径</div>
+            <div class="t-desc">焊缝几何形状：直线 / 圆形 / 长方形。</div>
+            <div class="seg" id="par-path"></div>
+            <div id="par-path-extra"></div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">③</span>扫描轨迹</div>
+            <div class="t-desc">光束相对路径的摆动方式：直线 / 正弦 / 圆形 / 8字。</div>
+            <div class="seg" id="par-traj"></div>
+            <div id="par-traj-extra"></div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">④</span>能量密度云图</div>
+            <div class="t-desc" id="par-cloud-title">直线 · 直线 · d=0.60mm</div>
+            <div class="ed-tool-row">
+              <div class="ed-tool-pill on" id="par-2d">2D 云图</div>
+              <div class="ed-tool-pill" id="par-path-toggle" onclick="togglePath()">路径叠加</div>
+            </div>
+            <div class="diagram"><canvas id="dcCloud"></canvas></div>
+            <div class="colorbar">
+              <div class="cb-head"><span class="cb-title">能量密度</span><span class="cb-unit">J/mm²</span></div>
+              <div class="cb-bar"></div>
+              <div class="cb-scale"><span>0</span><span class="mid" id="par-avg">4.9</span><span class="max" id="par-peak">151.3</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">⑤</span>计算结果</div>
+            <div class="r-grid">
+              <div class="r-item r-hero"><div class="r-label">线能量 E（单位焊缝长度输入能量）</div><div class="r-value"><span id="dc_eline">51.0</span><span class="r-unit"> J/mm</span></div></div>
+              <div class="r-item"><div class="r-label">峰值功率密度 I₀</div><div class="r-value"><span id="dc_peakPd">1.80</span><span class="r-unit"> ×10⁶ W/cm²</span></div></div>
+              <div class="r-item"><div class="r-label">峰值面能量密度</div><div class="r-value"><span id="dc_peakEd">151.3</span><span class="r-unit"> J/mm²</span></div></div>
+              <div class="r-item"><div class="r-label">平均面能量密度</div><div class="r-value"><span id="dc_avgEd">4.9</span><span class="r-unit"> J/mm²</span></div></div>
+              <div class="r-item"><div class="r-label">工艺模式判定</div><div class="r-value"><span class="mode-pill mode-keyhole" id="dc_mode">Keyhole 小孔</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 脉冲特性 -->
+        <div class="page" id="p-quality">
+          <div class="card params">
+            <div class="t-title"><span class="section-no">①</span>脉冲波形</div>
+            <div class="t-desc">P_avg · 重频 · 脉宽 → 单脉冲能量 · 峰值功率 · 周期 · 占空比</div>
+            <div id="ql-inputs"></div>
+            <div class="ed-tool-row">
+              <div class="ed-tool">脉冲波形</div>
+              <div class="ed-play" id="ql-pc-play" onclick="toggleQL('pc')">⏸ 暂停</div>
+            </div>
+            <div class="diagram"><div class="diagram-badge">脉冲示意</div><canvas id="pcCanvas"></canvas></div>
+            <div class="r-grid">
+              <div class="r-item"><div class="r-label">单脉冲能量</div><div class="r-value"><span id="pc_Ep">20.0</span><span class="r-unit"> mJ</span></div></div>
+              <div class="r-item"><div class="r-label">峰值功率</div><div class="r-value"><span id="pc_Pk">0.40</span><span class="r-unit"> MW</span></div></div>
+              <div class="r-item"><div class="r-label">脉冲周期</div><div class="r-value"><span id="pc_T">50.00</span><span class="r-unit"> ms</span></div></div>
+              <div class="r-item"><div class="r-label">占空比</div><div class="r-value"><span id="pc_duty">1.000</span><span class="r-unit"> %</span></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="t-title"><span class="section-no">②</span>脉冲扫描</div>
+            <div class="t-desc">输入 d·s·f，得搭接率 η=(1−s/d) 与扫描速度 v=s·f</div>
+            <div id="ql-scan-inputs"></div>
+            <div class="ed-tool-row">
+              <div class="ed-tool">光斑扫描</div>
+              <div class="ed-play" id="ql-os-play" onclick="toggleQL('os')">⏸ 暂停</div>
+            </div>
+            <div class="diagram"><div class="diagram-badge">扫描示意</div><canvas id="osCanvas"></canvas></div>
+            <div class="r-grid">
+              <div class="r-item r-hero"><div class="r-label">搭接率 η</div><div class="r-value"><span id="os_ol">50.0</span><span class="r-unit"> %</span></div></div>
+              <div class="r-item"><div class="r-label">扫描速度 v</div><div class="r-value"><span id="os_v">4</span><span class="r-unit"> mm/s</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 激光智造日报 -->
+        <div class="page" id="p-daily">
+          <div id="daily-list">
+            <div class="section-title">激光智造应用日报</div>
+            <div class="subtitle" id="daily-updated"></div>
+            <div class="hint">⚠️ 当前为本地预览数据，配置公网地址后显示全部日报</div>
+            <div id="daily-cards"></div>
+          </div>
+          <div id="daily-detail" style="display:none;">
+            <div class="detail-bar" onclick="backToList()"><span class="back-arrow">←</span><span class="back-text">返回列表</span></div>
+            <div class="detail-date" id="detail-date"></div>
+            <div class="lead" id="detail-lead"></div>
+            <div class="article" id="detail-html"></div>
+          </div>
+        </div>
+
+        <!-- 设置 -->
+        <div class="page" id="p-about">
+          <div class="section-title" style="margin-bottom:14px;">设置</div>
+          <div class="menu-card"><div class="menu-icon">💬</div><div class="menu-content"><div class="menu-title">联系开发者</div><div class="menu-desc">公众号：激光智造应用LIMA</div></div><div class="menu-arrow">→</div></div>
+          <div class="qr-card">
+            <div class="qr-box"><svg width="120" height="120" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/><g fill="#0F172A"><rect x="6" y="6" width="22" height="22"/><rect x="10" y="10" width="14" height="14" fill="#fff"/><rect x="14" y="14" width="6" height="6" fill="#0F172A"/><rect x="72" y="6" width="22" height="22"/><rect x="76" y="10" width="14" height="14" fill="#fff"/><rect x="80" y="14" width="6" height="6" fill="#0F172A"/><rect x="6" y="72" width="22" height="22"/><rect x="10" y="76" width="14" height="14" fill="#fff"/><rect x="14" y="80" width="6" height="6" fill="#0F172A"/><rect x="36" y="8" width="6" height="6"/><rect x="48" y="8" width="6" height="6"/><rect x="60" y="12" width="6" height="6"/><rect x="36" y="20" width="6" height="6"/><rect x="52" y="20" width="6" height="6"/><rect x="64" y="24" width="6" height="6"/><rect x="40" y="36" width="6" height="6"/><rect x="56" y="40" width="6" height="6"/><rect x="72" y="40" width="6" height="6"/><rect x="88" y="36" width="6" height="6"/><rect x="36" y="52" width="6" height="6"/><rect x="48" y="56" width="6" height="6"/><rect x="64" y="60" width="6" height="6"/><rect x="80" y="56" width="6" height="6"/><rect x="40" y="72" width="6" height="6"/><rect x="56" y="76" width="6" height="6"/><rect x="72" y="80" width="6" height="6"/><rect x="88" y="72" width="6" height="6"/><rect x="44" y="88" width="6" height="6"/><rect x="60" y="88" width="6" height="6"/><rect x="84" y="88" width="6" height="6"/></g></svg></div>
+            <div class="menu-desc" style="color:var(--muted);font-size:12px;">扫码关注公众号 · 点击放大</div>
+          </div>
+          <div class="section-title" style="margin-top:28px;">资料</div>
+          <div class="menu-card"><div class="menu-icon">🌟</div><div class="menu-content"><div class="menu-title">激光智造知识库</div><div class="menu-desc">精选工艺案例与标准文档</div></div><div class="menu-arrow">→</div></div>
+          <div class="menu-card" style="margin-top:6px;"><div class="menu-icon">📋</div><div class="menu-content"><div class="menu-title">复制小程序ID</div><div class="menu-desc">wxa2b03cc9eb1a7536</div></div><div class="menu-arrow">→</div></div>
+          <div class="section-title" style="margin-top:28px;">关于</div>
+          <div class="info-card">
+            <div class="info-row"><div class="info-label">版本</div><div class="info-value">v2.1.0</div></div>
+            <div class="info-row"><div class="info-label">更新</div><div class="info-value">2026-07-29</div></div>
+          </div>
+          <div class="card" style="margin-top:12px;"><div class="menu-title" style="margin-bottom:5px;">🔒 隐私说明</div><div class="menu-desc">本小程序不收集任何用户个人数据，所有计算在本地完成。</div></div>
+          <div class="card"><div class="menu-title" style="margin-bottom:5px;">⚖️ 免责声明</div><div class="menu-desc">计算结果仅供参考，实际工艺需结合设备特性和现场测试确认。</div></div>
+        </div>
+
+        <!-- 能量密度（子页） -->
+        <div class="page" id="p-energy">
+          <div class="nav-back" onclick="hideEnergy()">‹</div>
+          <div class="cnav" style="margin-top:0;"><div class="nav-title"><span class="nav-lima">LIMA</span><span class="nav-dash">-Tools-</span><span class="nav-sub">能量密度</span></div></div>
+          <div class="card">
+            <div class="t-title" style="padding-left:12px;"><span style="display:inline-block;width:5px;height:16px;border-radius:3px;background:var(--gold);margin-right:6px;vertical-align:middle;"></span>激光参数</div>
+            <div id="en-inputs"></div>
+            <div class="t-desc" style="margin-top:6px;">高斯光束模型：I(r)=2ηP/(πr²)·exp(−2r²/r₀²)，r₀=d/2。</div>
+          </div>
+          <div class="card">
+            <div class="t-title" style="padding-left:12px;"><span style="display:inline-block;width:5px;height:16px;border-radius:3px;background:var(--cyan);margin-right:6px;vertical-align:middle;"></span>扫描设置</div>
+            <div class="t-desc" style="font-size:12px;color:var(--muted);font-weight:700;margin:6px 0 4px;">扫描路径（缝几何）</div>
+            <div class="seg" id="en-path"></div>
+            <div id="en-path-extra"></div>
+            <div class="t-desc" style="font-size:12px;color:var(--muted);font-weight:700;margin:10px 0 4px;">扫描轨迹（光束摆动）</div>
+            <div class="seg" id="en-traj"></div>
+            <div id="en-traj-extra"></div>
+          </div>
+          <div class="card">
+            <div class="t-title" style="padding-left:12px;"><span style="display:inline-block;width:5px;height:16px;border-radius:3px;background:var(--gold);margin-right:6px;vertical-align:middle;"></span>能量密度云图</div>
+            <div class="t-desc" id="en-cloud-sub" style="font-size:11px;"></div>
+            <div class="ed-tool-row">
+              <div class="ed-tool-pill on" id="en-turbo" onclick="toggleTurbo()"><span style="display:inline-block;width:30px;height:8px;border-radius:3px;background:linear-gradient(90deg,rgb(8,10,40),rgb(0,170,205),rgb(235,205,45),rgb(250,45,30));vertical-align:middle;margin-right:4px;"></span>色标</div>
+              <div class="ed-tool-pill on" id="en-path-toggle" onclick="toggleEnPath()">路径</div>
+              <div class="ed-tool-pill" onclick="enRecompute()">重算</div>
+            </div>
+            <div class="diagram"><canvas id="densityCanvas"></canvas></div>
+            <div class="t-desc" id="en-viewtag" style="text-align:center;font-size:11px;color:var(--muted);">俯视 2D</div>
+          </div>
+          <div class="card">
+            <div class="t-title" style="padding-left:12px;"><span style="display:inline-block;width:5px;height:16px;border-radius:3px;background:var(--gold);margin-right:6px;vertical-align:middle;"></span>计算结果</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <div class="r-item" style="border-color:rgba(6,182,212,.3);"><div class="r-label">线能量 E</div><div class="r-value" style="font-size:18px;"><span id="rE">0</span><span class="r-unit"> J/mm</span></div></div>
+              <div class="r-item" style="border-color:rgba(255,106,26,.3);"><div class="r-label">峰值功率密度 I₀</div><div class="r-value" style="font-size:18px;color:#FF6A1A;"><span id="rI">0</span><span class="r-unit"> W/cm²</span></div></div>
+              <div class="r-item"><div class="r-label">峰值面能量密度</div><div class="r-value" style="font-size:18px;"><span id="rPk">0</span><span class="r-unit"> J/mm²</span></div></div>
+              <div class="r-item"><div class="r-label">平均面能量密度</div><div class="r-value" style="font-size:18px;"><span id="rMn">0</span><span class="r-unit"> J/mm²</span></div></div>
+              <div class="r-item" style="border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.06);"><div class="r-label">工艺模式判定</div><div class="r-value" style="font-size:16px;color:#34D399;"><span id="rMode">—</span></div><div class="t-desc" id="rModeNote" style="font-size:10px;margin:2px 0 0;"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="tabbar" id="tabbar"></div>
+    </div>
+  </div>
+
+  <div class="side">
+    <h1>LIMA激光工具箱</h1>
+    <div class="sub">微信小程序 v2.1.0 · 浏览器预览（WorkBuddy）</div>
+    <p>这是把原小程序（<code>limacalc</code>）完整还原成的可交互 HTML 预览：深色仪表盘、底部 5 个 Tab，以及从原 <code>.js</code> 端口过来的<strong>真实计算逻辑</strong>。</p>
+    <ul>
+      <li><strong>光路设计</strong>：拖动滑块实时算聚焦/离焦光斑，光路示意与高斯双曲线为 canvas 动画。</li>
+      <li><strong>激光参数</strong>：功率·速度·光斑·吸收率 + 路径/轨迹 → 能量密度云图（turbo 配色）与工艺模式判定。</li>
+      <li><strong>脉冲特性</strong>：脉冲波形示波器 + 搭接率扫描动画。</li>
+      <li><strong>日报 / 设置</strong>：列表→详情，设置含公众号二维码占位。</li>
+      <li><strong>能量密度 3D</strong>：从①页底部进入，俯视热力图 + 路径叠加。</li>
+    </ul>
+    <div class="note">说明：日报数据为本地示例（原程序走 CloudBase 远程拉取）；图标/二维码为 SVG 占位；其余样式与算法尽量对齐源码。</div>
+  </div>
+</div>
+
+<script>
+/* ============ 通用工具 ============ */
+const toNum = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const fx = (v,d) => Number.isFinite(v) ? v.toFixed(d) : (0).toFixed(d);
+const CYAN="#06B6D4",CYAN2="#6FE9FF",GOLD="#F59E0B",WHITE="#E2E8F0",GRAY="#94A3B8";
+function hexA(hex,a){const h=hex.replace("#","");const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return `rgba(${r},${g},${b},${a})`;}
+function setupCanvas(id){const c=document.getElementById(id);const r=c.getBoundingClientRect();const dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;const ctx=c.getContext("2d");ctx.scale(dpr,dpr);return {c,ctx,W:r.width,H:r.height,dpr};}
+
+/* ============ 自定义滑块（小球默认居中，数值保持默认，拖动正常改值） ============ */
+function sliderHTML(k,min,max,step,val,color){return `<div class="slider ${color||""}" data-k="${k}" data-min="${min}" data-max="${max}" data-step="${step}" data-val="${val}"><div class="slider-track"><div class="slider-fill"></div><div class="slider-thumb"></div></div></div>`;}
+function wireSlider(slider,num,onChange){
+  const min=toNum(slider.dataset.min),max=toNum(slider.dataset.max),step=Math.max(toNum(slider.dataset.step),1e-9);
+  const fill=slider.querySelector(".slider-fill"),thumb=slider.querySelector(".slider-thumb"),track=slider.querySelector(".slider-track");
+  const setThumb=ratio=>{ratio=Math.max(0,Math.min(1,ratio));fill.style.width=(ratio*100)+"%";thumb.style.left=(ratio*100)+"%";};
+  setThumb(0.5); // 默认小球居中
+  const valToRatio=v=>Math.max(0,Math.min(1,(v-min)/(max-min)));
+  const ratioToVal=r=>{let v=min+r*(max-min);v=Math.round(v/step)*step;v=Math.max(min,Math.min(max,v));v=Number(v.toFixed(6));return v;};
+  const applyRatio=r=>{setThumb(r);const v=ratioToVal(r);num.value=v;onChange(v);};
+  let dragging=false;
+  const fromX=clientX=>{const rc=track.getBoundingClientRect();let r=(clientX-rc.left)/rc.width;applyRatio(r);};
+  slider.addEventListener("pointerdown",e=>{dragging=true;try{slider.setPointerCapture(e.pointerId);}catch(_){}fromX(e.clientX);e.preventDefault();});
+  slider.addEventListener("pointermove",e=>{if(dragging)fromX(e.clientX);});
+  slider.addEventListener("pointerup",()=>{dragging=false;});
+  slider.addEventListener("pointercancel",()=>{dragging=false;});
+  num.oninput=()=>{let v=toNum(num.value);v=Math.max(min,Math.min(max,v));setThumb(valToRatio(v));onChange(v);};
+}
+
+/* ============ 时钟 ============ */
+function tick(){const d=new Date();document.getElementById("clock").textContent=d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");}
+tick();setInterval(tick,10000);
+
+/* ============ Tab 配置 ============ */
+const TABS=[
+  {key:"optical",txt:"光路设计",sub:"激光光斑计算",icon:'<path d="M3 12h4l3-7 4 14 3-7h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'},
+  {key:"params",txt:"激光参数",sub:"能量密度仿真",icon:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'},
+  {key:"quality",txt:"脉冲特性",sub:"脉冲波形",icon:'<path d="M2 12h4l2-7 4 14 3-9 2 4h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'},
+  {key:"daily",txt:"激光智造日报",sub:"行业资讯",icon:'<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'},
+  {key:"about",txt:"设置",sub:"关于",icon:'<circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'}
+];
+const tabbar=document.getElementById("tabbar");
+TABS.forEach(t=>{
+  const el=document.createElement("div");el.className="tab";el.dataset.key=t.key;
+  el.innerHTML=`<svg viewBox="0 0 24 24">${t.icon}</svg><span class="tab-txt">${t.txt}</span>`;
+  el.onclick=()=>showTab(t.key);
+  tabbar.appendChild(el);
+});
+
+function showTab(key){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.key===key));
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  const page=document.getElementById("p-"+key);
+  page.classList.add("active");
+  document.getElementById("navSub").textContent=TABS.find(t=>t.key===key).sub;
+  document.getElementById("scroll").scrollTop=0;
+}
+/* 子页（能量密度）不走 tab，单独显隐 */
+function showPage(key){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("p-"+key).classList.add("active");document.getElementById("scroll").scrollTop=0;if(key==="energy")setTimeout(relayoutEnergy,30);}
+
+/* ============ 滑块行构建 ============ */
+function buildRows(containerId, fields, onChange, color){
+  const col=(color&&typeof color==="object"&&color.color)?color.color:(typeof color==="string"?color:"");
+  const c=document.getElementById(containerId);c.innerHTML="";
+  fields.forEach(f=>{
+    const row=document.createElement("div");row.className="param-row";
+    row.innerHTML=`<div class="param-info"><div class="param-name">${f.name}</div><div class="param-desc">${f.desc}</div></div>
+      <div class="param-control">${sliderHTML(f.k,f.min,f.max,f.step,f.val,col)}<input type="text" value="${f.val}" data-k="${f.k}"></div>
+      <div class="param-unit">${f.unit}</div>`;
+    const slider=row.querySelector('.slider'),num=row.querySelector('input[type=text]');
+    wireSlider(slider,num,v=>onChange(f.k,v));
+    c.appendChild(row);
+  });
+}
+
+/* ====================== 光路设计 ====================== */
+const opt={wl:1064,m2:1.2,core:50,na:0.22,fcol:160,B:1.0,f:160,z:2.0};
+buildRows("opt-inputs",[
+  {k:"wl",name:"波长 λ",desc:"激光波长",unit:"nm",min:300,max:2500,step:1,val:1064},
+  {k:"m2",name:"光束质量 M²",desc:"≥1，衍射极限为1",unit:"",min:1,max:10,step:0.05,val:1.2},
+  {k:"core",name:"光纤芯径 d_core",desc:"光纤纤芯直径",unit:"μm",min:2,max:1000,step:1,val:50},
+  {k:"na",name:"光纤数值孔径 NA",desc:"决定准直光束直径",unit:"",min:0.05,max:0.6,step:0.01,val:0.22},
+  {k:"fcol",name:"准直镜焦距 f_col",desc:"前焦距 (mm)",unit:"mm",min:20,max:500,step:1,val:160},
+  {k:"B",name:"光束放大倍率 B",desc:"扩束比 (×)",unit:"×",min:1,max:20,step:0.5,val:1.0},
+  {k:"f",name:"聚焦镜焦距 f",desc:"后焦距 (mm)",unit:"mm",min:20,max:500,step:1,val:160},
+  {k:"z",name:"离焦距离 z",desc:"沿光轴偏离焦点 ±",unit:"mm",min:-10,max:10,step:0.1,val:2.0}
+],(k,v)=>{opt[k]=toNum(v);calcOptical();});
+
+let focusW0=0,focusMeff=1,focusAnim={},defAnim={};
+function calcOptical(){
+  const wl=opt.wl*1e-6, m2=opt.m2, core=opt.core, NA=opt.na, fcol=Math.max(opt.fcol,1e-6), B=Math.max(opt.B,0.01), f=opt.f;
+  const Dcol=2*fcol*NA, Deff=Dcol*B;
+  const w0_diff=(Deff>0&&f>0)?(2*m2*wl*f)/(Math.PI*Deff):0;
+  const d_diff=2*w0_diff*1000;
+  const d_image=core*(f/fcol);
+  const fd=Math.max(d_diff,d_image);
+  const mode=d_image>d_diff?"芯径成像受限":"衍射极限受限";
+  const M_eff=d_diff>0?fd/d_diff:m2;
+  const fnum=Deff>0?f/Deff:0, na_focus=f>0?Deff/(2*f):0;
+  document.getElementById("sp_fd").textContent=fx(fd,2);
+  document.getElementById("sp_ddiff").textContent=fx(d_diff,2);
+  document.getElementById("sp_dimage").textContent=fx(d_image,2);
+  document.getElementById("sp_fnum").textContent=fx(fnum,2);
+  document.getElementById("sp_na_f").textContent=fx(na_focus,3);
+  const dl=document.getElementById("sp_ddiff_l"),il=document.getElementById("sp_dimage_l");
+  dl.innerHTML=mode==="衍射极限受限"?"衍射极限 <span class='lead-tag'>主导模式</span>":"衍射极限";
+  il.innerHTML=mode==="芯径成像受限"?"芯径成像 <span class='lead-tag'>主导模式</span>":"芯径成像";
+  focusW0=fd/2/1000;focusMeff=M_eff;focusAnim={D:Dcol,exD:Deff,f,fd};
+  // defocus
+  const z=opt.z, w0=focusW0, Meff=focusMeff;
+  const zR=(Meff>0&&wl>0&&w0>0)?(Math.PI*w0*w0)/(Meff*wl):0;
+  const DOF=2*zR, zrSafe=zR>1e-9?zR:1e-9;
+  const wz=w0*Math.sqrt(1+(z/zrSafe)*(z/zrSafe));
+  document.getElementById("sp_wz").textContent=fx(2*wz*1000,2);
+  document.getElementById("sp_zr").textContent=fx(zR,3);
+  document.getElementById("sp_dof").textContent=fx(DOF,3);
+  document.getElementById("sp_ratio").textContent="×"+fx(wz/Math.max(w0,1e-9),1);
+  defAnim={w0mm:w0*1000,zrmm:zR*1000,zmm:z};
+}
+
+/* 光路示意图 */
+function drawFocus(ctx,W,H){
+  const st=focusAnim,D=Math.max(st.D,1),exD=Math.max(st.exD,1),f=Math.max(st.f,1);
+  const CY=H*0.48,t=Date.now()/1000;
+  ctx.clearRect(0,0,W,H);
+  let bg=ctx.createRadialGradient(W*0.7,CY,8,W*0.5,H*0.5,W*0.8);
+  bg.addColorStop(0,"#0c1726");bg.addColorStop(1,"#05090f");ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const maxD=Math.max(exD,D,5),sc=60/maxD;
+  const chh=Math.min(Math.max(D*sc,3),CY-8),eh=Math.min(Math.max(exD*sc,3),CY-8);
+  const xf=W*0.07,xc=W*0.24,xe1=W*0.43,xe2=W*0.51,xfc=W*0.70,xs=W*0.90,fW=6,fH=3;
+  const beam=(x1,h1,x2,h2)=>{const mh=Math.max(h1,h2);const g=ctx.createLinearGradient(0,CY-mh,0,CY+mh);g.addColorStop(0,"rgba(6,182,212,0.05)");g.addColorStop(.5,"rgba(6,182,212,0.17)");g.addColorStop(1,"rgba(6,182,212,0.05)");ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x1,CY-h1);ctx.lineTo(x2,CY-h2);ctx.lineTo(x2,CY+h2);ctx.lineTo(x1,CY+h1);ctx.closePath();ctx.fill();ctx.strokeStyle="rgba(6,182,212,0.3)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x1,CY-h1);ctx.lineTo(x2,CY-h2);ctx.moveTo(x1,CY+h1);ctx.lineTo(x2,CY+h2);ctx.stroke();};
+  beam(xf,fH,xc,chh);beam(xc,chh,xe1,chh);beam(xe1,chh,xe2,eh);beam(xe2,eh,xfc,eh);
+  const cg=ctx.createLinearGradient(xfc,0,xs,0);cg.addColorStop(0,"rgba(6,182,212,0.18)");cg.addColorStop(1,"rgba(6,182,212,0.02)");ctx.fillStyle=cg;ctx.beginPath();ctx.moveTo(xfc,CY-eh);ctx.lineTo(xs,CY);ctx.lineTo(xfc,CY+eh);ctx.closePath();ctx.fill();ctx.strokeStyle="rgba(6,182,212,0.3)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xfc,CY-eh);ctx.lineTo(xs,CY);ctx.moveTo(xfc,CY+eh);ctx.lineTo(xs,CY);ctx.stroke();
+  ctx.fillStyle="rgba(6,182,212,0.12)";ctx.fillRect(xf-fW*2,CY-fH,fW*2,fW*2);ctx.strokeStyle=CYAN;ctx.lineWidth=1.8;ctx.strokeRect(xf-fW*2,CY-fH,fW*2,fW*2);
+  const lens=(x,h,lw,col)=>{ctx.beginPath();ctx.moveTo(x-lw,CY-h);ctx.lineTo(x+lw,CY-h);ctx.quadraticCurveTo(x+lw*2.8,CY,x+lw,CY+h);ctx.lineTo(x-lw,CY+h);ctx.closePath();const g=ctx.createLinearGradient(0,CY-h,0,CY+h);g.addColorStop(0,'rgba(6,182,212,0.20)');g.addColorStop(.5,'rgba(6,182,212,0.05)');g.addColorStop(1,'rgba(6,182,212,0.20)');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.stroke();};
+  lens(xc,chh+5,6,WHITE);lens(xe1,chh+4,5,WHITE);lens(xe2,eh+4,5,WHITE);
+  // 聚焦镜（金）
+  const xf2=xfc,h=eh+5,lw=7;ctx.beginPath();ctx.moveTo(xf2-lw,CY-h);ctx.lineTo(xf2+lw,CY-h);ctx.quadraticCurveTo(xf2+lw*2.8,CY,xf2+lw,CY+h);ctx.lineTo(xf2-lw,CY+h);ctx.closePath();const g=ctx.createLinearGradient(0,CY-h,0,CY+h);g.addColorStop(0,'rgba(245,158,11,0.20)');g.addColorStop(.5,'rgba(245,158,11,0.05)');g.addColorStop(1,'rgba(245,158,11,0.20)');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=GOLD;ctx.lineWidth=2.2;ctx.stroke();
+  const pulse=0.5+0.5*Math.sin(t*4),frad=7+pulse*3;
+  const fg=ctx.createRadialGradient(xs,CY,0,xs,CY,frad);fg.addColorStop(0,"rgba(255,255,255,0.95)");fg.addColorStop(0.3,"rgba(239,68,68,0.85)");fg.addColorStop(1,"rgba(239,68,68,0)");ctx.save();ctx.fillStyle=fg;ctx.beginPath();ctx.arc(xs,CY,frad,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.textAlign="center";ctx.fillStyle=GRAY;ctx.font="12px sans-serif";
+  ctx.fillText("光纤",xf,CY+fH+14);ctx.fillText("准直镜",xc,H-10);ctx.fillText("扩束镜",(xe1+xe2)/2,H-10);
+  ctx.fillStyle=GOLD;ctx.fillText("聚焦镜",xfc,H-10);
+  ctx.fillStyle="#EFD9A0";ctx.font="bold 12px sans-serif";ctx.fillText("焦点 "+(st.fd||0).toFixed(1)+"μm",xs,CY-12);
+  ctx.fillStyle=GRAY;ctx.fillText("Φ"+D.toFixed(1),(xc+xe1)/2,12);ctx.fillStyle=GOLD;ctx.fillText("Φ"+exD.toFixed(1),(xe2+xfc)/2,12);
+  // 光子流
+  const LANES=11,laneYn=[];for(let k=0;k<LANES;k++)laneYn.push(((k/(LANES-1))*2-1)*0.92);
+  if(!window._phF)window._phF=[];if(window._phF.length===0)for(let i=0;i<130;i++)window._phF.push({lane:i%LANES,u:Math.random(),sp:0.5+Math.random()*0.5});
+  ctx.save();for(const p of window._phF){p.u+=p.sp*0.01;if(p.u>1)p.u-=1;const x=xf+u_x(p.u),hw=hAt(x);const yn=laneYn[p.lane];const y=CY+yn*hw;ctx.shadowColor='rgba(150,238,246,0.9)';ctx.shadowBlur=4;ctx.fillStyle='rgba(186,230,253,'+(0.45+0.4*(0.5+0.5*Math.exp(-(yn*yn)/0.6)))+')';ctx.beginPath();ctx.arc(x,y,1.9,0,Math.PI*2);ctx.fill();}ctx.restore();
+  function u_x(u){return xf+u*(xs-xf);}
+  function hAt(x){if(x<=xf)return fH;if(x<=xc)return fH+(chh-fH)*((x-xf)/(xc-xf));if(x<=xe1)return chh;if(x<=xe2)return chh+(eh-chh)*((x-xe1)/(xe2-xe1));if(x<=xfc)return eh;return Math.max(eh*(1-(x-xfc)/(xs-xfc)),0.4);}
+}
+function drawDefocus(ctx,W,H){
+  const st=defAnim||{w0mm:4.34,zrmm:46,zmm:2};
+  const CY=H*0.5,t=Date.now()/1000;
+  ctx.clearRect(0,0,W,H);
+  let bg=ctx.createRadialGradient(W*0.5,CY,8,W*0.5,CY,W*0.7);bg.addColorStop(0,"#0c1726");bg.addColorStop(1,"#05090f");ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const xWaist=W*0.5,MARGIN=64,maxH=CY-MARGIN;
+  const zrmm=Math.max(st.zrmm,1e-6),zAbs=Math.max(Math.abs(st.zmm)*1000,1e-6);
+  const viewSpan=Math.max(1.2*zrmm,zAbs/0.65),scale=(W*0.44)/viewSpan,zrPx=zrmm*scale;
+  const VIS_SCALE=10,OPEN_RATIO=10;
+  const w0px=Math.max(8,Math.min(st.w0mm/1000*scale*VIS_SCALE,42));
+  const maxDx=viewSpan*scale;
+  const hAt=dx=>{const u=Math.min(Math.abs(dx)/maxDx,1);return w0px*(1+(OPEN_RATIO-1)*u*u);};
+  const xL=xWaist-viewSpan*scale,xR=xWaist+viewSpan*scale;
+  const bL=xWaist-zrPx,bR=xWaist+zrPx;
+  ctx.fillStyle="rgba(245,158,11,0.12)";ctx.fillRect(bL,CY-maxH,bR-bL,maxH*2);
+  ctx.save();ctx.shadowColor=GOLD;ctx.shadowBlur=8;ctx.strokeStyle=GOLD;ctx.lineWidth=1.6;ctx.setLineDash([8,6]);ctx.lineDashOffset=-((t*30)%14);ctx.beginPath();ctx.moveTo(bL,CY-maxH);ctx.lineTo(bL,CY+maxH);ctx.moveTo(bR,CY-maxH);ctx.lineTo(bR,CY+maxH);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  const envFill=ctx.createLinearGradient(xL,0,xR,0);envFill.addColorStop(0,"rgba(6,182,212,0.10)");envFill.addColorStop(0.5,"rgba(6,182,212,0.28)");envFill.addColorStop(1,"rgba(6,182,212,0.10)");ctx.fillStyle=envFill;ctx.beginPath();for(let x=xL;x<=xR;x+=2){const h=hAt(x-xWaist);x===xL?ctx.moveTo(x,CY-h):ctx.lineTo(x,CY-h);}for(let x=xR;x>=xL;x-=2)ctx.lineTo(x,CY+hAt(x-xWaist));ctx.closePath();ctx.fill();
+  ctx.save();ctx.shadowColor=CYAN;ctx.shadowBlur=10;ctx.strokeStyle="rgba(111,233,255,0.95)";ctx.lineWidth=2.2;ctx.beginPath();for(let x=xL;x<=xR;x+=3)ctx.lineTo(x,CY-hAt(x-xWaist));ctx.stroke();ctx.beginPath();for(let x=xL;x<=xR;x+=3)ctx.lineTo(x,CY+hAt(x-xWaist));ctx.stroke();ctx.restore();
+  const LANES=11,laneYn=[];for(let k=0;k<LANES;k++)laneYn.push(((k/(LANES-1))*2-1)*0.92);
+  if(!window._phD)window._phD=[];if(window._phD.length===0)for(let i=0;i<96;i++)window._phD.push({lane:i%LANES,u:Math.random(),sp:0.2+Math.random()*0.4});
+  ctx.save();for(const p of window._phD){p.u+=p.sp*0.01;if(p.u>1)p.u-=1;const x=xL+p.u*(xR-xL),hw=hAt(x-xWaist);const yn=laneYn[p.lane];const y=CY+yn*hw;ctx.shadowColor='rgba(150,238,246,0.9)';ctx.shadowBlur=4;ctx.fillStyle='rgba(186,230,253,'+(0.45+0.4*(0.5+0.5*Math.exp(-(yn*yn)/0.6)))+')';ctx.beginPath();ctx.arc(x,y,1.9,0,Math.PI*2);ctx.fill();}ctx.restore();
+  const breathe=1+0.18*Math.sin(t*2.2),fr=Math.max(7,w0px*0.9*breathe);
+  const fg=ctx.createRadialGradient(xWaist,CY,1,xWaist,CY,fr*2.4);fg.addColorStop(0,"rgba(255,240,200,0.95)");fg.addColorStop(0.35,"rgba(245,158,11,0.65)");fg.addColorStop(1,"rgba(245,158,11,0)");ctx.save();ctx.fillStyle=fg;ctx.beginPath();ctx.arc(xWaist,CY,fr*2.4,0,Math.PI*2);ctx.fill();ctx.restore();
+  for(let i=0;i<2;i++){const ph=((t*0.6+i*0.5)%1);const rr=fr*0.5+ph*fr*3.2;ctx.strokeStyle=hexA(GOLD,0.6*(1-ph));ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(xWaist,CY,rr,0,Math.PI*2);ctx.stroke();}
+  ctx.fillStyle="#FFF4D6";ctx.shadowColor=GOLD;ctx.shadowBlur=14;ctx.beginPath();ctx.arc(xWaist,CY,3.2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  const rawX=xWaist+st.zmm*1000*scale,clamped=rawX<xL+4||rawX>xR-4,defX=Math.max(xL+4,Math.min(xR-4,rawX)),defH=Math.min(hAt(defX-xWaist),maxH);
+  ctx.save();ctx.shadowColor=CYAN2;ctx.shadowBlur=10;ctx.strokeStyle=hexA(CYAN2,0.95);ctx.lineWidth=2.2;ctx.setLineDash([4,4]);ctx.lineDashOffset=-((t*24)%8);ctx.beginPath();ctx.moveTo(defX,CY-defH);ctx.lineTo(defX,CY+defH);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=CYAN2;ctx.beginPath();ctx.arc(defX,CY-defH,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(defX,CY+defH,3,0,Math.PI*2);ctx.fill();ctx.restore();
+  const zRatio=(st.zmm*1000)/Math.max(zrmm,1e-9),wzRadiusUm=st.w0mm*Math.sqrt(1+zRatio*zRatio);
+  ctx.fillStyle=CYAN2;ctx.font="bold 12px sans-serif";ctx.textAlign="center";ctx.fillText("z="+st.zmm.toFixed(1)+"mm  光斑直径 w(z)="+(2*wzRadiusUm).toFixed(1)+"μm",defX,CY-defH-10);
+  const bandTop=CY-maxH;ctx.textAlign="center";ctx.fillStyle=GRAY;ctx.font="12px sans-serif";ctx.fillText("Rayleigh 范围 / 焦深带",xWaist,bandTop-26);
+  ctx.fillStyle=hexA(CYAN,0.95);ctx.textAlign="right";ctx.fillText("-z_R",bL-10,bandTop-6);ctx.textAlign="left";ctx.fillText("+z_R",bR+10,bandTop-6);ctx.textAlign="center";ctx.fillStyle=GOLD;ctx.font="bold 12px sans-serif";ctx.fillText("DOF = "+(2*zrmm/1000).toFixed(3)+"mm",(bL+bR)/2,bandTop+20);ctx.fillStyle=GRAY;ctx.font="12px sans-serif";ctx.fillText("束腰半径 w₀="+st.w0mm.toFixed(2)+"μm（直径 "+(2*st.w0mm).toFixed(2)+"μm）",xWaist,H-10);
+}
+let optRAF;
+function optLoop(){drawFocus(focusS.ctx,focusS.W,focusS.H);drawDefocus(defS.ctx,defS.W,defS.H);optRAF=requestAnimationFrame(optLoop);}
+let focusS,defS;
+function startOptical(){focusS=setupCanvas("focusCanvas");defS=setupCanvas("defCanvas");calcOptical();optLoop();}
+function relayoutOptical(){if(document.getElementById("p-optical").classList.contains("active")){focusS=setupCanvas("focusCanvas");defS=setupCanvas("defCanvas");calcOptical();}}
+
+/* ====================== 激光参数（能量密度云图） ====================== */
+const PATH_ITEMS=[{key:"line",name:"直线"},{key:"circle",name:"圆形"},{key:"rect",name:"长方形"}];
+const WOBBLE_ITEMS=[{key:"none",name:"直线"},{key:"sine",name:"正弦"},{key:"circle",name:"圆形"},{key:"eight",name:"8字"}];
+const par={p:3000,v:20,d:0.6,eta:25,path:"line",l:20,h:12,r:0,traj:"none",a:2.0,f:8.0};
+let parShowPath=false;
+buildRows("par-inputs",[
+  {k:"p",name:"激光功率 P",desc:"输入功率",unit:"W",min:100,max:10000,step:100,val:3000},
+  {k:"v",name:"焊接速度 v",desc:"进给速度",unit:"mm/s",min:1,max:500,step:1,val:20},
+  {k:"d",name:"光斑直径 d",desc:"聚焦光斑",unit:"mm",min:0.1,max:5,step:0.1,val:0.6},
+  {k:"eta",name:"材料吸收率 η",desc:"能量耦合",unit:"%",min:1,max:100,step:1,val:25}
+],(k,v)=>{par[k]=toNum(v);cDC();});
+function buildSeg(containerId,items,cur,onpick){const c=document.getElementById(containerId);c.innerHTML="";items.forEach(it=>{const b=document.createElement("div");b.className="seg-btn"+(it.key===cur?" active":"");b.textContent=it.name;b.onclick=()=>onpick(it.key);c.appendChild(b);});}
+function parExtra(){
+  const pe=document.getElementById("par-path-extra");
+  let ph="";const isC=par.path==="circle";
+  ph+=rowHTML("l",isC?"圆形直径 D":"扫描长度 L",isC?"焊缝圆直径":"直线长 / 矩形长边","mm",2,100,1,par.l,"gold");
+  if(par.path==="rect")ph+=rowHTML("h","矩形高度 H","长方形宽度","mm",2,100,1,par.h,"gold")+rowHTML("r","倒角半径 R","0 表示无倒角","mm",0,20,0.5,par.r,"gold");
+  pe.innerHTML=ph;
+  bindRow(pe,"l",v=>{par.l=toNum(v);cDC();});
+  if(par.path==="rect"){bindRow(pe,"h",v=>{par.h=toNum(v);cDC();});bindRow(pe,"r",v=>{par.r=toNum(v);cDC();});}
+  const te=document.getElementById("par-traj-extra");let th="";
+  if(par.traj!=="none")th=rowHTML("a","摆动振幅 A","轨迹幅度","mm",0.2,8,0.1,par.a,"gold")+rowHTML("f","摆动频率 f","轨迹频率","Hz",1,50,0.5,par.f,"gold");
+  te.innerHTML=th;
+  if(par.traj!=="none"){bindRow(te,"a",v=>{par.a=toNum(v);cDC();});bindRow(te,"f",v=>{par.f=toNum(v);cDC();});}
+}
+function rowHTML(k,name,desc,unit,min,max,step,val,color){return `<div class="param-row"><div class="param-info"><div class="param-name">${name}</div><div class="param-desc">${desc}</div></div><div class="param-control">${sliderHTML(k,min,max,step,val,color)}<input type="text" value="${val}" data-k="${k}"></div><div class="param-unit">${unit}</div></div>`;}
+function bindRow(container,k,cb){const slider=container.querySelector(`.slider[data-k="${k}"]`);const num=container.querySelector(`input[type=text][data-k="${k}"]`);if(!slider)return;wireSlider(slider,num,v=>cb(v));}
+buildSeg("par-path",PATH_ITEMS,par.path,pickParPath);
+buildSeg("par-traj",WOBBLE_ITEMS,par.traj,pickParTraj);
+function pickParPath(k){par.path=k;buildSeg("par-path",PATH_ITEMS,k,pickParPath);parExtra();cDC();}
+function pickParTraj(k){par.traj=k;buildSeg("par-traj",WOBBLE_ITEMS,k,pickParTraj);parExtra();cDC();}
+function togglePath(){parShowPath=!parShowPath;document.getElementById("par-path-toggle").classList.toggle("on",parShowPath);cDC();}
+
+/* 仿真算法（端口自 params.js） */
+function peakIntensity(P,d,eta){const w=d/2;return (2*eta*P)/(Math.PI*w*w);}
+function rectPoint(w,h,r,s){r=Math.min(Math.max(0,r),w/2,h/2);const sw=Math.max(w-2*r,0),sh=Math.max(h-2*r,0),arc=(Math.PI/2)*r;const peri=2*sw+2*sh+4*arc;s=((s%peri)+peri)%peri;const hw=w/2,hh=h/2;if(s<sw)return{x:-hw+r+s,y:-hh,tx:1,ty:0};s-=sw;if(s<arc){const t=s/r,theta=-Math.PI/2+t;const cx=hw-r,cy=-hh+r;return{x:cx+r*Math.cos(theta),y:cy+r*Math.sin(theta),tx:Math.sin(theta),ty:-Math.cos(theta)};}s-=arc;if(s<sh)return{x:hw,y:-hh+r+s,tx:0,ty:1};s-=sh;if(s<arc){const t=s/r,theta=t;const cx=hw-r,cy=hh-r;return{x:cx+r*Math.cos(theta),y:cy+r*Math.sin(theta),tx:Math.sin(theta),ty:-Math.cos(theta)};}s-=arc;if(s<sw)return{x:hw-r-s,y:hh,tx:-1,ty:0};s-=sw;if(s<arc){const t=s/r,theta=Math.PI/2+t;const cx=-hw+r,cy=hh-r;return{x:cx+r*Math.cos(theta),y:cy+r*Math.sin(theta),tx:Math.sin(theta),ty:-Math.cos(theta)};}s-=arc;const t=s/r,theta=Math.PI+t;const cx=-hw+r,cy=-hh+r;return{x:cx+r*Math.cos(theta),y:cy+r*Math.sin(theta),tx:Math.sin(theta),ty:-Math.cos(theta)};}
+function genTrajectory(data,N){const v=toNum(data.v),A=toNum(data.a),f=toNum(data.f);const path=data.path,traj=data.traj;const L=Math.max(0.001,toNum(data.l));const H=Math.max(0.001,toNum(data.h||L));let T,cFn;if(path==="line"){T=v>0?L/v:0.001;cFn=t=>({x:-L/2+v*t,y:0,tx:1,ty:0});}else if(path==="circle"){const R=Math.max(L/2,0.5),cLen=2*Math.PI*R;T=v>0?cLen/v:0.001;cFn=t=>{const a=2*Math.PI*t/T;return{x:-R*Math.cos(a),y:-R*Math.sin(a),tx:Math.sin(a),ty:-Math.cos(a)};};}else{const R=Math.max(0,toNum(data.r));const sw=Math.max(L-2*R,0),sh=Math.max(H-2*R,0),arc=(Math.PI/2)*R;const peri=2*sw+2*sh+4*arc;T=v>0&&peri>0?peri/v:0.001;cFn=t=>rectPoint(L,H,R,(v*t)%Math.max(peri,1e-6));}
+  const baseN=N&&N>0?N:360;const cycles=Math.max(1,f*T);const samplesPerCycle=96;const adaptiveN=Math.max(baseN,Math.ceil(cycles*samplesPerCycle)+1);N=Math.min(adaptiveN,2500);
+  const dt=T/N,omega=2*Math.PI*f;const out=new Float32Array((N+1)*2);
+  for(let k=0;k<=N;k++){const t=k*dt,c=cFn(t);let ox=0,oy=0;if(traj==="sine"){const dmod=-A*Math.sin(omega*t);if(path==="line"){oy=dmod;}else{const n=Math.hypot(c.tx,c.ty)||1;ox=-c.ty/n*dmod;oy=c.tx/n*dmod;}}else if(traj==="circle"){ox=-A*Math.cos(omega*t);oy=-A*Math.sin(omega*t);}else if(traj==="eight"){ox=A*Math.sin(2*omega*t);oy=A*Math.sin(omega*t);}out[k*2]=c.x+ox;out[k*2+1]=c.y+oy;}
+  return{traj:out,T,dt,N};}
+function getRegion(data){const L=Math.max(0.001,toNum(data.l));const A=Math.max(0.001,toNum(data.a));const d=Math.max(0.001,toNum(data.d));const w=d/2;const H=Math.max(0.001,toNum(data.h||L));let xMin,xMax,yMin,yMax;if(data.traj==="none"){let pHW,pHH;if(data.path==="line"){pHW=L/2;pHH=0;}else if(data.path==="circle"){const R=Math.max(L/2,0.5);pHW=R;pHH=R;}else{pHW=L/2;pHH=H/2;}xMin=-pHW;xMax=pHW;yMin=-pHH;yMax=pHH;}else{const{traj}=genTrajectory(data,120);const Np=traj.length/2;xMin=xMax=traj[0];yMin=yMax=traj[1];for(let k=1;k<Np;k++){const x=traj[k*2],y=traj[k*2+1];if(x<xMin)xMin=x;if(x>xMax)xMax=x;if(y<yMin)yMin=y;if(y>yMax)yMax=y;}}const mx=1.5*w+0.5;return{xMin:xMin-mx,xMax:xMax+mx,yMin:yMin-mx,yMax:yMax+mx,L:(xMax-xMin)+2*mx,H:(yMax-yMin)+2*mx};}
+function computeHeat(data,W,H){const P=toNum(data.p),d=toNum(data.d),eta=toNum(data.eta)/100;const reg=getRegion(data);const w=d/2;const dx=reg.L/W,dy=reg.H/H;const I0=peakIntensity(P,d,eta);const{traj,T,dt,N}=genTrajectory(data,1200);let mx=0;const grid=new Float32Array(W*H);const twoW2=w*w/2;const R=3*w;const rc=Math.ceil(R/dx)+1,rr=Math.ceil(R/dy)+1;for(let k=0;k<=N;k++){const cx=traj[k*2],cy=traj[k*2+1];const ci=Math.floor((cx-reg.xMin)/dx);const cj=Math.floor((cy-reg.yMin)/dy);const i0=Math.max(0,ci-rc),i1=Math.min(W-1,ci+rc);const j0=Math.max(0,cj-rr),j1=Math.min(H-1,cj+rr);for(let j=j0;j<=j1;j++){const py=reg.yMin+(j+0.5)*dy-cy;const py2=py*py;const row=j*W;for(let i=i0;i<=i1;i++){const px=reg.xMin+(i+0.5)*dx-cx;const r2=px*px+py2;const e=I0*Math.exp(-r2/twoW2)*dt;grid[row+i]+=e;if(grid[row+i]>mx)mx=grid[row+i];}}}return{grid,mx,reg,W,H};}
+const THEME_STOPS=[[0,[10,40,130]],[0.22,[20,100,230]],[0.40,[6,160,210]],[0.55,[6,182,212]],[0.70,[34,211,238]],[0.80,[245,158,11]],[0.92,[250,90,20]],[1,[255,50,50]]];
+function themeColor(t){t=Math.max(0,Math.min(1,t));for(let i=1;i<THEME_STOPS.length;i++){if(t<=THEME_STOPS[i][0]){const a=THEME_STOPS[i-1],b=THEME_STOPS[i];const f=(t-a[0])/(b[0]-a[0]);return[Math.round(a[1][0]+(b[1][0]-a[1][0])*f),Math.round(a[1][1]+(b[1][1]-a[1][1])*f),Math.round(a[1][2]+(b[1][2]-a[1][2])*f)];}}return THEME_STOPS[THEME_STOPS.length-1][1];}
+function processMode(peakPdWcm2){if(peakPdWcm2>=0.5e6)return{name:"Keyhole 小孔",key:"keyhole"};if(peakPdWcm2>=0.1e6)return{name:"过渡区",key:"trans"};return{name:"热传导",key:"conduction"};}
+let parDCtimer;
+function cDC(){const data=par;const P=toNum(data.p),v=toNum(data.v),d=toNum(data.d),eta=toNum(data.eta)/100;const I0=peakIntensity(P,d,eta);const eLine=v>0?eta*P/v:0;const peakPdWcm2=I0*100;const reg=getRegion(data);const full=computeHeat(data,240,150);let peakEd=0,sum=0;for(let i=0;i<full.grid.length;i++){if(full.grid[i]>peakEd)peakEd=full.grid[i];sum+=full.grid[i];}const avgEd=sum/full.grid.length;const mode=processMode(peakPdWcm2);
+  document.getElementById("dc_eline").textContent=fx(eLine,1);
+  document.getElementById("dc_peakPd").textContent=fx(peakPdWcm2/1e6,2);
+  document.getElementById("dc_peakEd").textContent=fx(peakEd,1);
+  document.getElementById("dc_avgEd").textContent=fx(avgEd,1);
+  const mp=document.getElementById("dc_mode");mp.textContent=mode.name;mp.className="mode-pill mode-"+mode.key;
+  const pn={line:"直线",circle:"圆形",rect:"长方形"}[data.path];const tn={none:"直线",sine:"正弦",circle:"圆形",eight:"8字"}[data.traj];
+  let base=pn+" · "+tn+" · d="+d.toFixed(2)+"mm · 区域 "+reg.L.toFixed(0)+"×"+reg.H.toFixed(0)+" mm";
+  if(data.path==="rect"){const r=toNum(data.r);base+= r>0?" · R="+r.toFixed(1)+"mm":" · 无倒角";}
+  document.getElementById("par-cloud-title").textContent=base;
+  document.getElementById("par-avg").textContent=fx(avgEd,1);document.getElementById("par-peak").textContent=fx(peakEd,1);
+  drawCloud(full,parShowPath);}
+function drawCloud(full,showPath){const c=document.getElementById("dcCloud");const r=c.getBoundingClientRect();if(r.width<2)return;const dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=Math.max(r.height,200)*dpr;const ctx=c.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);const cw=r.width,ch=Math.max(r.height,200);ctx.clearRect(0,0,cw,ch);const reg=full.reg,W=full.W,H=full.H;const padL=8,padB=16,padT=8,padR=8;const plotW=cw-padL-padR,plotH=ch-padT-padB;const apScale=Math.min(plotW/reg.L,plotH/reg.H);const dw=reg.L*apScale,dh=reg.H*apScale;const ox=padL+(plotW-dw)/2,oy=padT+(plotH-dh)/2;const inv=full.mx>0?1/full.mx:0,GAMMA=0.6;const off=document.createElement("canvas");off.width=W;off.height=H;const octx=off.getContext("2d");const img=octx.createImageData(W,H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){const val=Math.pow(full.grid[j*W+i]*inv,GAMMA);const col=themeColor(val);const idx=(j*W+i)*4;img.data[idx]=col[0];img.data[idx+1]=col[1];img.data[idx+2]=col[2];img.data[idx+3]=255;}octx.putImageData(img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(off,0,0,W,H,ox,oy,dw,dh);ctx.strokeStyle="rgba(148,163,184,0.35)";ctx.lineWidth=1;ctx.strokeRect(ox+0.5,oy+0.5,dw-1,dh-1);if(showPath){const traj=genTrajectory(par,400).traj;ctx.strokeStyle="rgba(255,255,255,0.55)";ctx.lineWidth=1;ctx.beginPath();const N=traj.length/2-1;for(let k=0;k<=N;k++){const x=traj[k*2],y=traj[k*2+1];const sx=ox+((x-reg.xMin)/reg.L)*dw;const sy=oy+((y-reg.yMin)/reg.H)*dh;if(k===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);}ctx.stroke();}ctx.fillStyle="rgba(255,255,255,0.55)";ctx.font="8px sans-serif";ctx.textAlign="center";ctx.fillText(reg.L.toFixed(0)+" mm",ox+dw/2,oy+dh+12);}
+
+/* ====================== 脉冲特性 ====================== */
+const ql={pc_p:200,pc_f:20,pc_tau:50,os_d:400,os_s:200,os_f:20};
+let qlPlay={pc:true,os:true},qlLast={};
+buildRows("ql-inputs",[
+  {k:"pc_p",name:"平均功率 P_avg",desc:"脉冲平均功率",unit:"W",min:10,max:10000,step:10,val:200,color:""},
+  {k:"pc_f",name:"重频 f",desc:"脉冲重复频率",unit:"kHz",min:0.1,max:1000,step:0.1,val:20,color:""},
+  {k:"pc_tau",name:"脉宽 τ",desc:"单脉冲宽度",unit:"ns",min:1,max:500,step:1,val:50,color:""}
+],(k,v)=>{ql[k]=toNum(v);cPC();},"");
+buildRows("ql-scan-inputs",[
+  {k:"os_d",name:"光斑直径 d",desc:"聚焦光斑直径",unit:"μm",min:10,max:2000,step:1,val:400,color:"gold"},
+  {k:"os_s",name:"扫描间距 s",desc:"相邻光斑中心距",unit:"μm",min:10,max:2000,step:1,val:200,color:"gold"},
+  {k:"os_f",name:"扫描重频 f",desc:"扫描时脉冲重复频率",unit:"kHz",min:0.1,max:1000,step:0.1,val:20,color:"gold"}
+],(k,v)=>{ql[k]=toNum(v);cOS();},"gold");
+function cPC(){const P=toNum(ql.pc_p),f_kHz=toNum(ql.pc_f),f=f_kHz*1000,tauS=toNum(ql.pc_tau)*1e-9;const Ep=f>0?P/f:0,Pk=tauS>0?Ep/tauS:0,T=f>0?1/f:0,duty=tauS*f;document.getElementById("pc_Ep").textContent=fx(Ep*1000,1);document.getElementById("pc_Pk").textContent=fx(Pk/1e6,2);document.getElementById("pc_T").textContent=fx(T*1000,2);document.getElementById("pc_duty").textContent=fx(duty*100,3);}
+function cOS(){const d_um=toNum(ql.os_d),s_um=toNum(ql.os_s),d=d_um/1000,s=s_um/1000,f=toNum(ql.os_f)*1000;const ol=d>0?(1-s/d)*100:0,v=s*f;document.getElementById("os_ol").textContent=fx(Math.max(0,Math.min(100,ol)),1);document.getElementById("os_v").textContent=fx(v,0);}
+function toggleQL(k){qlPlay[k]=!qlPlay[k];document.getElementById("ql-"+k+"-play").textContent=qlPlay[k]?"⏸ 暂停":"▶ 播放";}
+function drawPC(ctx,W,H,dt){const tauS=toNum(ql.pc_tau)*1e-9,f=toNum(ql.pc_f)*1000;const period=f>0?1/f:1e-3;const gray="#94A3B8",cyan="#06B6D4",gold="#F59E0B";ctx.clearRect(0,0,W,H);const x0=30,x1=W-12,plotW=x1-x0,baseY=H*0.82,topMax=14;ctx.strokeStyle="rgba(148,163,184,0.25)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0,baseY);ctx.lineTo(x1,baseY);ctx.stroke();const windowDur=Math.max(period*2.6,1e-9);if(window._pcWin===undefined)window._pcWin=0;window._pcWin+=dt*(windowDur/3.2);const levelAt=x=>{const t=window._pcWin+((x-x0)/plotW)*windowDur;const phase=((t%period)+period)%period;return phase<tauS?1:0;};const grad=ctx.createLinearGradient(0,topMax,0,baseY);grad.addColorStop(0,"rgba(6,182,212,0.55)");grad.addColorStop(1,"rgba(6,182,212,0.05)");ctx.save();ctx.beginPath();for(let x=x0;x<=x1;x+=2){const lv=levelAt(x);const y=baseY-lv*(baseY-topMax);if(x===x0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.lineTo(x1,baseY);ctx.lineTo(x0,baseY);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.restore();ctx.save();ctx.shadowColor=cyan;ctx.shadowBlur=8;ctx.strokeStyle="rgba(34,211,238,0.95)";ctx.lineWidth=1.5;ctx.beginPath();let pen=false;for(let x=x0;x<=x1;x+=2){const lv=levelAt(x);const y=baseY-lv*(baseY-topMax);if(!pen){ctx.moveTo(x,y);pen=true;}else ctx.lineTo(x,y);}ctx.stroke();ctx.restore();const tNow=window._pcWin+windowDur;const lvNow=(((tNow%period)+period)%period)<tauS?1:0;ctx.save();ctx.shadowColor=lvNow?gold:gray;ctx.shadowBlur=lvNow?12:4;ctx.beginPath();ctx.arc(x1,baseY-lvNow*(baseY-topMax),3,0,Math.PI*2);ctx.fillStyle=lvNow?gold:gray;ctx.fill();ctx.restore();ctx.fillStyle=gray;ctx.font="10px sans-serif";ctx.textAlign="left";ctx.fillText("τ="+toNum(ql.pc_tau).toFixed(0)+"ns  T="+(period*1e3).toFixed(2)+"ms",x0,baseY+12);}
+function drawOS(ctx,W,H,dt){const d_um=toNum(ql.os_d),s_um=toNum(ql.os_s),d=d_um/1000,s=s_um/1000,f=toNum(ql.os_f)*1000;const cyan="#06B6D4",gray="#94A3B8";ctx.clearRect(0,0,W,H);const r=Math.min(H*0.16,W*0.14);const sc=2*r/Math.max(d,0.01);const cy=H*0.55;const spacingPx=Math.max(s*sc,2);const xStart=W*0.10,xEnd=W*0.90;if(window._osEmit===undefined)window._osEmit=xStart;const emitSpeed=Math.max(30,Math.min(30+f*0.4,180));window._osEmit+=dt*emitSpeed;if(window._osEmit>xEnd){window._osEmit=xStart;window._osNextDep=xStart;window._osSpots=[];}if(window._osNextDep===undefined)window._osNextDep=window._osEmit;while(window._osNextDep<=window._osEmit){window._osSpots.push({x:window._osNextDep,t:Date.now()});window._osNextDep+=spacingPx;}if(window._osSpots.length>40)window._osSpots.splice(0,window._osSpots.length-40);const now=Date.now();window._osSpots.forEach(sp=>{const a=Math.max(0,1-(now-sp.t)/1400);ctx.beginPath();ctx.arc(sp.x,cy,r*0.92,0,Math.PI*2);ctx.fillStyle="rgba(6,182,212,"+(0.10+0.18*a)+")";ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle="rgba(6,182,212,"+(0.40+0.5*a)+")";ctx.stroke();});const ex=window._osEmit;for(let k=1;k<=5;k++){const tx=ex-k*4;if(tx<xStart)break;ctx.beginPath();ctx.arc(tx,cy,r*0.46,0,Math.PI*2);ctx.fillStyle="rgba(245,158,11,"+(0.05*(1-k/6))+")";ctx.fill();}ctx.save();ctx.shadowColor=cyan;ctx.shadowBlur=12;ctx.beginPath();ctx.arc(ex,cy,Math.max(r*0.26,4),0,Math.PI*2);ctx.fillStyle=cyan;ctx.fill();ctx.restore();ctx.fillStyle=gray;ctx.font="10px sans-serif";ctx.textAlign="center";ctx.fillText("搭接率 η="+Math.max(0,Math.min(100,(1-s/Math.max(d,1e-9))*100)).toFixed(0)+"%  (s="+s_um.toFixed(0)+" / d="+d_um.toFixed(0)+"μm)",W*0.5,cy+r+14);}
+let qlRAF;
+function qlLoop(){const dt=0.03;if(qlPlay.pc&&window._pcS&&_pcS.W>2)drawPC(_pcS.ctx,_pcS.W,_pcS.H,dt);if(qlPlay.os&&window._osS&&_osS.W>2)drawOS(_osS.ctx,_osS.W,_osS.H,dt);qlRAF=requestAnimationFrame(qlLoop);}
+let _pcS,_osS;
+function startQL(){_pcS=setupCanvas("pcCanvas");_osS=setupCanvas("osCanvas");cPC();cOS();qlLoop();}
+function relayoutQL(){if(document.getElementById("p-quality").classList.contains("active")){_pcS=setupCanvas("pcCanvas");_osS=setupCanvas("osCanvas");}}
+
+/* ====================== 能量密度子页 ====================== */
+const en={P:3000,v:50,d:0.6,eta:85,path:"line",wobble:"sine",L:16,Rp:3.0,Wx:12.0,Wy:6.0,Rc:1.0,RcMax:4.5,A:2.0,f:8.0};
+let enShowTurbo=true,enShowPath=true,enField=null,enPeak=0,enBbox=null,enPx=1,enOffX=0,enOffY=0,cw=0,ch=0,enPts=null,enI0=0,enT=1,enR=0.3;
+buildRows("en-inputs",[
+  {k:"P",name:"激光功率 P",desc:"",unit:"W",min:500,max:6000,step:50,val:3000,color:"orange"},
+  {k:"v",name:"焊接速度 v",desc:"",unit:"mm/s",min:5,max:200,step:1,val:50,color:"orange"},
+  {k:"d",name:"光斑直径 d",desc:"",unit:"mm",min:0.1,max:3,step:0.05,val:0.6,color:"orange"},
+  {k:"eta",name:"材料吸收率 η",desc:"",unit:"%",min:10,max:100,step:1,val:85,color:"orange"}
+],(k,v)=>{en[k]=toNum(v);enCompute();},{color:"orange"});
+function enExtra(){
+  const pe=document.getElementById("en-path-extra");let ph="";
+  if(en.path==="line")ph=rowHTML("L","扫描长度 L（直线缝）","","mm",4,40,1,en.L,"orange");
+  else if(en.path==="circle")ph=rowHTML("Rp","圆形路径半径 R","","mm",1,8,0.1,en.Rp,"orange");
+  else ph=rowHTML("Wx","矩形宽 Wx","","mm",2,38,0.5,en.Wx,"orange")+rowHTML("Wy","矩形高 Wy","","mm",2,9,0.5,en.Wy,"orange")+rowHTML("Rc","倒角尺寸 Rc（0=直角）","","mm",0,en.RcMax,0.1,en.Rc,"orange");
+  pe.innerHTML=ph;
+  bindRow(pe,"L",v=>{en.L=toNum(v);enCompute();});bindRow(pe,"Rp",v=>{en.Rp=toNum(v);enCompute();});bindRow(pe,"Wx",v=>{en.Wx=toNum(v);updateRcMax();enCompute();});bindRow(pe,"Wy",v=>{en.Wy=toNum(v);updateRcMax();enCompute();});bindRow(pe,"Rc",v=>{en.Rc=toNum(v);enCompute();});
+  const te=document.getElementById("en-traj-extra");let th="";
+  if(en.wobble!=="none")th=rowHTML("A","摆幅 A","","mm",0,5,0.1,en.A,"orange")+rowHTML("f","摆动频率 f","","Hz",1,30,0.5,en.f,"orange");
+  te.innerHTML=th;
+  bindRow(te,"A",v=>{en.A=toNum(v);enCompute();});bindRow(te,"f",v=>{en.f=toNum(v);enCompute();});
+}
+function updateRcMax(){const Wx=toNum(en.Wx),Wy=toNum(en.Wy),mx=Math.min(Wx,Wy)/2;let Rc=toNum(en.Rc);if(Rc>mx)Rc=mx;en.RcMax=mx.toFixed(1);en.Rc=Number(Rc.toFixed(1));}
+buildSeg("en-path",PATH_ITEMS,en.path,k=>{en.path=k;buildSeg("en-path",PATH_ITEMS,k,()=>{});enExtra();enCompute();});
+buildSeg("en-traj",WOBBLE_ITEMS,en.wobble,k=>{en.wobble=k;buildSeg("en-traj",WOBBLE_ITEMS,k,()=>{});enExtra();enCompute();});
+function toggleTurbo(){enShowTurbo=!enShowTurbo;document.getElementById("en-turbo").classList.toggle("on",enShowTurbo);}
+function toggleEnPath(){enShowPath=!enShowPath;document.getElementById("en-path-toggle").classList.toggle("on",enShowPath);}
+function enRecompute(){enCompute();}
+function enBuildPath(){const r=en.d/2;const path=en.path,wobble=en.wobble;let seam=[];if(path==="line"){seam=[[0,0],[toNum(en.L),0]];}else if(path==="circle"){const Rp=toNum(en.Rp);const M=Math.max(64,Math.ceil(2*Math.PI*Rp/(r/4)));for(let i=0;i<M;i++){const a=2*Math.PI*i/M;seam.push([Rp*Math.cos(a),Rp*Math.sin(a)]);}seam.push([seam[0][0],seam[0][1]]);}else{const Wx=toNum(en.Wx),Wy=toNum(en.Wy);const Rc=Math.min(toNum(en.Rc),Math.min(Wx,Wy)/2);const hw=Wx/2,hh=Wy/2;const segs=[];if(Rc<=1e-6){segs.push(["L",[-hw,hh],[hw,hh]]);segs.push(["L",[hw,hh],[hw,-hh]]);segs.push(["L",[hw,-hh],[-hw,-hh]]);segs.push(["L",[-hw,-hh],[-hw,hh]]);}else{segs.push(["L",[-hw+Rc,hh],[hw-Rc,hh]]);segs.push(["A",[hw-Rc,hh-Rc],90,0,Rc]);segs.push(["L",[hw,hh-Rc],[hw,-hh+Rc]]);segs.push(["A",[hw-Rc,-hh+Rc],0,-90,Rc]);segs.push(["L",[hw-Rc,-hh],[-hw+Rc,-hh]]);segs.push(["A",[-hw+Rc,-hh+Rc],-90,-180,Rc]);segs.push(["L",[-hw,-hh+Rc],[-hw,hh-Rc]]);segs.push(["A",[-hw+Rc,hh-Rc],-180,-270,Rc]);}const out=[];for(const s of segs){if(s[0]==="L"){const[x0,y0]=s[1],[x1,y1]=s[2];const len=Math.hypot(x1-x0,y1-y0);const n=Math.max(1,Math.ceil(len/(r/3)));for(let i=0;i<n;i++)out.push([x0+(x1-x0)*i/n,y0+(y1-y0)*i/n]);}else{const cc=s[1],a0=s[2]*Math.PI/180,a1=s[3]*Math.PI/180,Rk=s[4];const n=Math.max(4,Math.ceil(Math.abs(a0-a1)*Rk/(r/3)));for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;out.push([cc[0]+Rk*Math.cos(a),cc[1]+Rk*Math.sin(a)]);}}}out.push([out[0][0],out[0][1]]);seam=out;}
+  const seamL=pathLength(seam);const cum=[0];for(let i=1;i<seam.length;i++)cum.push(cum[i-1]+Math.hypot(seam[i][0]-seam[i-1][0],seam[i][1]-seam[i-1][1]));
+  const baseAt=s=>{if(s<=0)return seam[0];if(s>=seamL)return seam[seam.length-1];let i=1;while(i<cum.length&&cum[i]<s)i++;const k=(s-cum[i-1])/((cum[i]-cum[i-1])||1);return[seam[i-1][0]+(seam[i][0]-seam[i-1][0])*k,seam[i-1][1]+(seam[i][1]-seam[i-1][1])*k];};
+  let wobAt;if(wobble==="none")wobAt=()=>[0,0];else{const A=toNum(en.A),fr=toNum(en.f),w=2*Math.PI*fr;if(wobble==="sine")wobAt=t=>[0,A*Math.sin(w*t)];else if(wobble==="circle")wobAt=t=>[A*Math.cos(w*t),A*Math.sin(w*t)];else wobAt=t=>[A*Math.sin(w*t),A*Math.sin(2*w*t)];}
+  const T=seamL/toNum(en.v);const cycles=wobble!=="none"?toNum(en.f)*T:0;const N=Math.min(6000,Math.max(60,Math.round(Math.max(3*seamL/r,32*cycles))));const pts=[];for(let i=0;i<=N;i++){const t=i/N*T;const b=baseAt(toNum(en.v)*t);const w=wobAt(t);pts.push([b[0]+w[0],b[1]+w[1]]);}return{pts,T};}
+function pathLength(pts){let s=0;for(let i=1;i<pts.length;i++)s+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);return s;}
+function enCompute(){const d=en;const P=toNum(d.P),v=toNum(d.v),dia=toNum(d.d),etaFrac=toNum(d.eta)/100;const r=dia/2;const I0=(Math.PI*r*r)>0?(2*etaFrac*P)/(Math.PI*r*r):0;const{L}=d;const{pts,T}=enBuildPath();if(!pts||pts.length<2)return;let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;for(const p of pts){if(p[0]<minX)minX=p[0];if(p[0]>maxX)maxX=p[0];if(p[1]<minY)minY=p[1];if(p[1]>maxY)maxY=p[1];}enBbox={minX,maxX,minY,maxY};const margin=0.8;const spanX=Math.max(maxX-minX,0.001)+2*margin,spanY=Math.max(maxY-minY,0.001)+2*margin;const cv=document.getElementById("densityCanvas");const rect=cv.getBoundingClientRect();cw=Math.round(rect.width);ch=Math.round(280);const px=Math.min(cw/spanX,ch/spanY);enPx=px;enOffX=-minX*px;enOffY=ch+minY*px;let peak=0,mean=0;
+  if(cw>=2){const N=pts.length-1,dt=T/N;const f=new Float32Array(cw*ch);for(let i=0;i<=N;i++)enDeposit(f,pts[i][0],pts[i][1],I0*dt,r);let sum=0;for(let k=0;k<f.length;k++){const val=f[k];if(val>peak)peak=val;sum+=val;}mean=sum/f.length;enField=f;enPeak=peak;enPts=pts;enI0=I0;enT=T;enR=r;drawEnergyHeat();}
+  updateEnSub(v);updateEnResults(P,v,etaFrac,r,I0,peak,mean);}
+function enDeposit(f,xmm,ymm,amt,r){const px0=enOffX+xmm*enPx,py0=enOffY-ymm*enPx;const hw=Math.ceil(3*r*enPx)+2;const x0=Math.max(0,Math.floor(px0-hw)),x1=Math.min(cw-1,Math.ceil(px0+hw));const y0=Math.max(0,Math.floor(py0-hw)),y1=Math.min(ch-1,Math.ceil(py0+hw));const inv=1/(r*r);for(let py=y0;py<=y1;py++){const yy=(enOffY-py)/enPx,dy=yy-ymm;for(let px=x0;px<=x1;px++){const xx=(px-enOffX)/enPx,dx=xx-xmm;f[py*cw+px]+=amt*Math.exp(-2*(dx*dx+dy*dy)*inv);}}}
+const EN_STOPS=[[0,[8,10,40]],[0.18,[30,60,160]],[0.38,[0,170,205]],[0.58,[40,200,120]],[0.74,[235,205,45]],[0.88,[240,110,20]],[1,[250,45,30]]];
+function enCmap(t){t=Math.max(0,Math.min(1,t));for(let i=0;i<EN_STOPS.length-1;i++){const a=EN_STOPS[i],b=EN_STOPS[i+1];if(t<=b[0]){const k=(t-a[0])/(b[0]-a[0]||1);return[a[1][0]+(b[1][0]-a[1][0])*k,a[1][1]+(b[1][1]-a[1][0])*k,a[1][2]+(b[1][2]-a[1][2])*k];}}return EN_STOPS[EN_STOPS.length-1][1];}
+function drawEnergyHeat(){if(!enField||cw<2)return;const cv=document.getElementById("densityCanvas");const ctx=cv.getContext("2d");const dpr=window.devicePixelRatio||1;cv.width=cw*dpr;cv.height=ch*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle="#0A0E15";ctx.fillRect(0,0,cw,ch);const off=document.createElement("canvas");off.width=cw;off.height=ch;const octx=off.getContext("2d");const img=octx.createImageData(cw,ch);const GAMMA=0.6,inv=enPeak>0?1/enPeak:0;for(let i=0,n=cw*ch;i<n;i++){const t=Math.pow(enField[i]*inv,GAMMA);const c=enShowTurbo?enCmap(t):[20+(1-t)*20,30+t*40,40+t*60];const k=i*4;img.data[k]=c[0];img.data[k+1]=c[1];img.data[k+2]=c[2];img.data[k+3]=255;}octx.putImageData(img,0,0);ctx.drawImage(off,0,0);if(enShowPath&&enPts){ctx.strokeStyle="rgba(255,255,255,0.9)";ctx.lineWidth=2;ctx.lineJoin="round";ctx.beginPath();for(let i=0;i<enPts.length;i++){const sx=enOffX+enPts[i][0]*enPx,sy=enOffY-enPts[i][1]*enPx;if(i)ctx.lineTo(sx,sy);else ctx.moveTo(sx,sy);}ctx.stroke();}}
+function sup(n){const m={"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻"};return String(n).split("").map(c=>m[c]||c).join("");}
+function fmtExp(x){if(x===0)return"0";const e=Math.floor(Math.log10(x));const mm=x/Math.pow(10,e);return mm.toFixed(2)+"×10"+sup(e);}
+function updateEnSub(v){const d=en;const pnames={line:"直线",circle:"圆形",rect:"长方形"};const wnames={none:"无摆动",sine:"正弦摆动",circle:"圆形摆动",eight:"8字形摆动"};const seamL=d.path==="line"?toNum(d.L):d.path==="circle"?(2*Math.PI*toNum(d.Rp)):(()=>{const Wx=toNum(d.Wx),Wy=toNum(d.Wy),Rc=Math.min(toNum(d.Rc),Math.min(Wx,Wy)/2);return 2*(Wx+Wy)-8*Rc+2*Math.PI*Rc;})();let extra="";if(d.wobble!=="none")extra=` · 摆幅A=${toNum(d.A).toFixed(1)}mm · f=${toNum(d.f).toFixed(1)}Hz`;const pw=(enBbox.maxX-enBbox.minX).toFixed(0),ph=(enBbox.maxY-enBbox.minY).toFixed(0);document.getElementById("en-cloud-sub").textContent=`路径: ${pnames[d.path]} + ${wnames[d.wobble]} · 缝长 ${seamL.toFixed(1)}mm · d=${toNum(d.d).toFixed(1)}mm · 区域 ${pw}×${ph}mm${extra}`;}
+function updateEnResults(P,v,etaFrac,r,I0,peak,mean){const E=etaFrac*P/v;const Icm2=I0*100;const keyhole=Icm2>1e6;document.getElementById("rE").textContent=fx(E,1);document.getElementById("rI").textContent=fmtExp(Icm2);document.getElementById("rPk").textContent=fx(peak,1);document.getElementById("rMn").textContent=fx(mean,1);document.getElementById("rMode").textContent=keyhole?"深熔焊":"热传导焊";document.getElementById("rModeNote").textContent=keyhole?"功率密度 > 10⁶ W/cm² 阈值 → 小孔效应":"功率密度 < 10⁶ W/cm² → 热传导主导";}
+function hideEnergy(){showTab("optical");}
+function relayoutEnergy(){if(document.getElementById("p-energy").classList.contains("active")){enCompute();}}
+
+/* ====================== 日报 ====================== */
+const DAILY=[
+  {date:"2026-08-14",count:6,lead:"本周激光增材与焊接交叉工艺持续升温，高功率蓝光半导体与万瓦光纤激光器在新能源电池托盘、航空航天钛合金结构件上的应用密集落地。",html:'<h3>一、蓝光/绿光半导体激光焊接进展</h3><p>多家设备商发布 <span class="tag">≥3kW 蓝光</span> 直接半导体模块，针对铜、铝等高反材料，相较于红外方案可将飞溅降低一个数量级，已在动力电池极柱、_busbar_ 连接实现稳定量产。</p><h3>二、万瓦级光纤激光厚板切割</h3><p>30kW 光纤激光配合 <span class="tag">智能焦点补偿</span> 与实时视觉纠偏，在 40mm 不锈钢切割中断面粗糙度 Ra 进入 6.3μm 区间，替代部分等离子工艺。</p><h3>三、激光增材标准动态</h3><p>航空钛合金 <span class="tag">LPBF 工艺</span> 新规范发布，对氧含量、层间温度均匀性提出量化门槛，推动在线监测成为标配。</p>'},
+  {date:"2026-08-13",count:5,lead:"脉冲激光精密清洗与超快激光微加工成为本周关键词，PCB 金手指、模具纹理化应用案例显著增多。",html:'<h3>一、超快激光微加工</h3><p><span class="tag">皮秒/飞秒</span> 在脆性材料钻孔的锥度控制取得突破，热影响区 < 2μm，满足医疗介入器械要求。</p><h3>二、激光清洗替代化学工艺</h3><p>轨道交通轮对、航空发动机叶片 <span class="tag">除漆除氧化层</span> 进入规模应用，单工位节拍较喷砂缩短 40%。</p>'},
+  {date:"2026-08-12",count:4,lead:"激光智造日报聚焦复合焊与机器人激光工作站，汽车白车身、储能箱体产线自动化程度持续提升。",html:'<h3>一、激光-电弧复合焊</h3><p><span class="tag">复合焊</span> 在铝合金车身的应用使焊接速度提升 30%，同时抑制气孔率。</p><h3>二、机器人激光工作站</h3><p>六轴协作机器人搭载 <span class="tag">振镜-场镜</span> 一体化头，实现中小件三维轨迹柔性加工。</p>'}
+];
+function renderDaily(){document.getElementById("daily-updated").textContent="更新于 2026-08-14";const wrap=document.getElementById("daily-cards");wrap.innerHTML="";DAILY.forEach((d,i)=>{const c=document.createElement("div");c.className="news-card";c.innerHTML=`<div class="card-date">${d.date}</div><div class="card-digest">${d.lead}</div><div class="card-foot"><span class="card-count">${d.count} 条资讯</span><span class="card-arrow">→</span></div>`;c.onclick=()=>openDetail(i);wrap.appendChild(c);});}
+function openDetail(i){const d=DAILY[i];document.getElementById("daily-list").style.display="none";document.getElementById("daily-detail").style.display="block";document.getElementById("detail-date").textContent=d.date;document.getElementById("detail-lead").textContent=d.lead;document.getElementById("detail-html").innerHTML=d.html;document.getElementById("scroll").scrollTop=0;}
+function backToList(){document.getElementById("daily-detail").style.display="none";document.getElementById("daily-list").style.display="block";document.getElementById("scroll").scrollTop=0;}
+
+/* ====================== 启动 ====================== */
+function boot(){
+  parExtra();cDC();
+  enExtra();updateRcMax();enCompute();
+  renderDaily();
+  showTab("optical");
+  // 先布局当前可见 canvas
+  startOptical();startQL();
+}
+window.addEventListener("load",()=>{boot();});
+// 切换 tab 时按需重算布局（canvas 尺寸依赖容器宽度）
+document.getElementById("tabbar").addEventListener("click",()=>{setTimeout(()=>{
+  if(document.getElementById("p-params").classList.contains("active")){const c=document.getElementById("dcCloud");if(c.width<10)cDC();}
+  if(document.getElementById("p-quality").classList.contains("active"))relayoutQL();
+  if(document.getElementById("p-optical").classList.contains("active"))relayoutOptical();
+  if(document.getElementById("p-energy").classList.contains("active"))relayoutEnergy();
+},30);});
+window.addEventListener("resize",()=>{relayoutOptical();relayoutQL();relayoutEnergy();if(document.getElementById("p-params").classList.contains("active"))cDC();});
+</script>
+</body>
+</html>
